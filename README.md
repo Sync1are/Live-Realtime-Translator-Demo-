@@ -28,7 +28,7 @@ A production-ready real-time speech translation system that captures audio from 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/speech-translation-pipeline.git
+git clone https://github.com/Sync1are/Live-Realtime-Translator-Demo-.git
 cd speech-translation-pipeline
 ```
 
