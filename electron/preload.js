@@ -34,6 +34,30 @@ contextBridge.exposeInMainWorld('notificationAPI', {
   // Testing
   testNotification: (type) => ipcRenderer.invoke('test-notification', type),
 
+  // Pomodoro
+  pomodoroEnable: () => ipcRenderer.invoke('pomodoro-enable'),
+  pomodoroDisable: () => ipcRenderer.invoke('pomodoro-disable'),
+  pomodoroUpdateSettings: (settings) => ipcRenderer.invoke('pomodoro-update-settings', settings),
+  pomodoroGetSettings: () => ipcRenderer.invoke('pomodoro-get-settings'),
+  pomodoroStartWork: (taskId) => ipcRenderer.invoke('pomodoro-start-work', taskId),
+  pomodoroStartBreak: (isLongBreak) => ipcRenderer.invoke('pomodoro-start-break', isLongBreak),
+  pomodoroPause: () => ipcRenderer.invoke('pomodoro-pause'),
+  pomodoroResume: () => ipcRenderer.invoke('pomodoro-resume'),
+  pomodoroSkip: () => ipcRenderer.invoke('pomodoro-skip'),
+  pomodoroExtend: (minutes) => ipcRenderer.invoke('pomodoro-extend', minutes),
+  pomodoroGetStatus: () => ipcRenderer.invoke('pomodoro-get-status'),
+  pomodoroGetUpcomingCycles: (count) => ipcRenderer.invoke('pomodoro-get-upcoming-cycles', count),
+
+  // Timer
+  timerStartFocus: (taskId) => ipcRenderer.invoke('timer-start-focus', taskId),
+  timerStartBreak: () => ipcRenderer.invoke('timer-start-break'),
+  timerEndSession: () => ipcRenderer.invoke('timer-end-session'),
+  timerGetCurrentSession: () => ipcRenderer.invoke('timer-get-current-session'),
+  timerGetAnalytics: (startDate, endDate) => ipcRenderer.invoke('timer-get-analytics', startDate, endDate),
+  timerGetHistory: (limit, offset) => ipcRenderer.invoke('timer-get-history', limit, offset),
+  timerUpdateSettings: (settings) => ipcRenderer.invoke('timer-update-settings', settings),
+  timerGetSettings: () => ipcRenderer.invoke('timer-get-settings'),
+
   // Event listeners
   onNotificationClicked: (callback) => {
     ipcRenderer.on('notification-clicked', (event, data) => callback(data));
@@ -43,5 +67,17 @@ contextBridge.exposeInMainWorld('notificationAPI', {
   },
   onShowDetails: (callback) => {
     ipcRenderer.on('show-details', (event, data) => callback(data));
+  },
+  onPomodoroWorkStarted: (callback) => {
+    ipcRenderer.on('pomodoro-work-started', (event, data) => callback(data));
+  },
+  onPomodoroBreakStarted: (callback) => {
+    ipcRenderer.on('pomodoro-break-started', (event, data) => callback(data));
+  },
+  onPomodoroSessionCompleted: (callback) => {
+    ipcRenderer.on('pomodoro-session-completed', (event, data) => callback(data));
+  },
+  onPomodoroTimerTick: (callback) => {
+    ipcRenderer.on('pomodoro-timer-tick', (event, data) => callback(data));
   }
 });

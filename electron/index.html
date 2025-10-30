@@ -195,6 +195,10 @@
           <div class="stat-label">Focus Time (min)</div>
         </div>
         <div class="stat-card">
+          <div class="stat-value" id="breakTime">0</div>
+          <div class="stat-label">Break Time (min)</div>
+        </div>
+        <div class="stat-card">
           <div class="stat-value" id="streak">0</div>
           <div class="stat-label">Day Streak</div>
         </div>
@@ -254,6 +258,73 @@
       </div>
     </div>
 
+    <!-- Pomodoro Settings -->
+    <div class="section">
+      <h2>🍅 Pomodoro Mode</h2>
+      <div class="controls">
+        <div class="control-group">
+          <label for="pomodoroEnabled">Enable Pomodoro Mode</label>
+          <input type="checkbox" id="pomodoroEnabled">
+        </div>
+        <div class="control-group">
+          <label for="pomodoroWorkDuration">Work Duration (minutes)</label>
+          <input type="number" id="pomodoroWorkDuration" min="1" max="60" value="25" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div class="control-group">
+          <label for="pomodoroBreakDuration">Break Duration (minutes)</label>
+          <input type="number" id="pomodoroBreakDuration" min="1" max="30" value="5" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div class="control-group">
+          <label for="pomodoroLongBreakDuration">Long Break Duration (minutes)</label>
+          <input type="number" id="pomodoroLongBreakDuration" min="1" max="60" value="15" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Pomodoro Timer -->
+    <div class="section" id="pomodoroTimerSection" style="display: none;">
+      <h2>Pomodoro Timer</h2>
+      <div style="text-align: center; margin: 20px 0;">
+        <div style="font-size: 48px; font-weight: bold; color: #667eea; margin-bottom: 10px;" id="pomodoroTimer">25:00</div>
+        <div style="font-size: 18px; color: #666; margin-bottom: 20px;" id="pomodoroPhase">Ready to work</div>
+        <div style="font-size: 14px; color: #999; margin-bottom: 20px;" id="pomodoroCycle">Cycle 1</div>
+      </div>
+      <div class="test-buttons" style="justify-content: center;">
+        <button onclick="startPomodoroWork()">▶️ Start Work</button>
+        <button onclick="pausePomodoro()">⏸️ Pause</button>
+        <button onclick="resumePomodoro()">▶️ Resume</button>
+        <button onclick="skipPomodoro()">⏭️ Skip</button>
+        <button onclick="extendPomodoro()">⏱️ +5 min</button>
+      </div>
+      <div style="margin-top: 20px;">
+        <h3 style="font-size: 14px; color: #666; margin-bottom: 10px;">Upcoming Cycles:</h3>
+        <div id="upcomingCycles" style="font-size: 12px; color: #888;"></div>
+      </div>
+    </div>
+
+    <!-- Break Reminder Settings -->
+    <div class="section">
+      <h2>Break Reminders</h2>
+      <div class="controls">
+        <div class="control-group">
+          <label for="breakReminderEnabled">Enable Break Reminders (non-Pomodoro)</label>
+          <input type="checkbox" id="breakReminderEnabled">
+        </div>
+        <div class="control-group">
+          <label for="breakReminderInterval">Remind After (minutes)</label>
+          <input type="number" id="breakReminderInterval" min="15" max="180" value="60" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Timer Analytics -->
+    <div class="section">
+      <h2>Focus & Break Analytics</h2>
+      <div id="analyticsContent">
+        <p style="color: #999;">Loading analytics...</p>
+      </div>
+    </div>
+
     <!-- Test Notifications -->
     <div class="section">
       <h2>Test Notifications</h2>
@@ -281,12 +352,17 @@
   <script>
     // Initialize
     let currentSettings = {};
+    let pomodoroStatus = null;
 
     // Load settings and stats on startup
     async function initialize() {
       await loadSettings();
       await loadDailyStats();
       await loadInbox();
+      await loadPomodoroSettings();
+      await loadTimerSettings();
+      await loadAnalytics();
+      setupPomodoroEventListeners();
     }
 
     // Load settings
@@ -317,6 +393,7 @@
         
         document.getElementById('tasksCompleted').textContent = stats.tasksCompleted;
         document.getElementById('focusTime').textContent = stats.focusTime;
+        document.getElementById('breakTime').textContent = stats.breakTime || 0;
         document.getElementById('streak').textContent = stats.streak;
         document.getElementById('pendingRollovers').textContent = stats.pendingRollovers;
       } catch (error) {
@@ -459,13 +536,260 @@
       loadDailyStats();
     });
 
+    // Load Pomodoro settings
+    async function loadPomodoroSettings() {
+      try {
+        const settings = await window.notificationAPI.pomodoroGetSettings();
+        
+        document.getElementById('pomodoroEnabled').checked = settings.enabled;
+        document.getElementById('pomodoroWorkDuration').value = settings.workDuration;
+        document.getElementById('pomodoroBreakDuration').value = settings.breakDuration;
+        document.getElementById('pomodoroLongBreakDuration').value = settings.longBreakDuration;
+        
+        // Show/hide timer section based on enabled state
+        document.getElementById('pomodoroTimerSection').style.display = settings.enabled ? 'block' : 'none';
+        
+        if (settings.enabled) {
+          await updatePomodoroStatus();
+          await updateUpcomingCycles();
+        }
+      } catch (error) {
+        console.error('Failed to load Pomodoro settings:', error);
+      }
+    }
+
+    // Load Timer settings
+    async function loadTimerSettings() {
+      try {
+        const settings = await window.notificationAPI.timerGetSettings();
+        
+        document.getElementById('breakReminderEnabled').checked = settings.breakReminderEnabled;
+        document.getElementById('breakReminderInterval').value = settings.breakReminderInterval;
+      } catch (error) {
+        console.error('Failed to load Timer settings:', error);
+      }
+    }
+
+    // Load analytics
+    async function loadAnalytics() {
+      try {
+        const analytics = await window.notificationAPI.timerGetAnalytics();
+        const content = document.getElementById('analyticsContent');
+        
+        content.innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div style="padding: 15px; background: #f9f9f9; border-radius: 4px;">
+              <div style="font-size: 24px; font-weight: bold; color: #667eea;">${analytics.focusSessions.count}</div>
+              <div style="font-size: 12px; color: #666;">Focus Sessions</div>
+              <div style="font-size: 12px; color: #999;">${analytics.focusSessions.totalMinutes} min total</div>
+            </div>
+            <div style="padding: 15px; background: #f9f9f9; border-radius: 4px;">
+              <div style="font-size: 24px; font-weight: bold; color: #764ba2;">${analytics.breakSessions.count}</div>
+              <div style="font-size: 12px; color: #666;">Break Sessions</div>
+              <div style="font-size: 12px; color: #999;">${analytics.breakSessions.totalMinutes} min total</div>
+            </div>
+            <div style="padding: 15px; background: #f9f9f9; border-radius: 4px;">
+              <div style="font-size: 24px; font-weight: bold; color: #4caf50;">${analytics.focusBreakRatio}</div>
+              <div style="font-size: 12px; color: #666;">Focus/Break Ratio</div>
+              <div style="font-size: 12px; color: #999;">Last 7 days</div>
+            </div>
+            <div style="padding: 15px; background: #f9f9f9; border-radius: 4px;">
+              <div style="font-size: 24px; font-weight: bold; color: #ff9800;">${analytics.focusSessions.pomodoroCount}</div>
+              <div style="font-size: 12px; color: #666;">Pomodoro Sessions</div>
+              <div style="font-size: 12px; color: #999;">${analytics.breakSessions.longBreaks} long breaks</div>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        console.error('Failed to load analytics:', error);
+      }
+    }
+
+    // Update Pomodoro status
+    async function updatePomodoroStatus() {
+      try {
+        pomodoroStatus = await window.notificationAPI.pomodoroGetStatus();
+        
+        if (pomodoroStatus.phase) {
+          const minutes = Math.floor(pomodoroStatus.remainingSeconds / 60);
+          const seconds = pomodoroStatus.remainingSeconds % 60;
+          document.getElementById('pomodoroTimer').textContent = 
+            `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+          
+          document.getElementById('pomodoroPhase').textContent = 
+            pomodoroStatus.phase === 'work' ? '💼 Work Session' : '☕ Break Time';
+          
+          document.getElementById('pomodoroCycle').textContent = 
+            `Cycle ${pomodoroStatus.currentCycle + 1}`;
+        }
+      } catch (error) {
+        console.error('Failed to update Pomodoro status:', error);
+      }
+    }
+
+    // Update upcoming cycles
+    async function updateUpcomingCycles() {
+      try {
+        const cycles = await window.notificationAPI.pomodoroGetUpcomingCycles(5);
+        const content = cycles.map(c => 
+          `Cycle ${c.cycle}: ${c.workDuration}m work → ${c.breakDuration}m ${c.isLongBreak ? 'long ' : ''}break`
+        ).join('<br>');
+        document.getElementById('upcomingCycles').innerHTML = content;
+      } catch (error) {
+        console.error('Failed to update upcoming cycles:', error);
+      }
+    }
+
+    // Pomodoro controls
+    async function startPomodoroWork() {
+      try {
+        await window.notificationAPI.pomodoroStartWork(null);
+        showStatus('Pomodoro work session started');
+      } catch (error) {
+        showStatus('Failed to start work session: ' + error.message, true);
+      }
+    }
+
+    async function pausePomodoro() {
+      try {
+        await window.notificationAPI.pomodoroPause();
+        showStatus('Pomodoro paused');
+      } catch (error) {
+        showStatus('Failed to pause: ' + error.message, true);
+      }
+    }
+
+    async function resumePomodoro() {
+      try {
+        await window.notificationAPI.pomodoroResume();
+        showStatus('Pomodoro resumed');
+      } catch (error) {
+        showStatus('Failed to resume: ' + error.message, true);
+      }
+    }
+
+    async function skipPomodoro() {
+      try {
+        await window.notificationAPI.pomodoroSkip();
+        showStatus('Session skipped');
+      } catch (error) {
+        showStatus('Failed to skip: ' + error.message, true);
+      }
+    }
+
+    async function extendPomodoro() {
+      try {
+        await window.notificationAPI.pomodoroExtend(5);
+        showStatus('Session extended by 5 minutes');
+      } catch (error) {
+        showStatus('Failed to extend: ' + error.message, true);
+      }
+    }
+
+    // Setup Pomodoro event listeners
+    function setupPomodoroEventListeners() {
+      window.notificationAPI.onPomodoroTimerTick((data) => {
+        const minutes = Math.floor(data.remainingSeconds / 60);
+        const seconds = data.remainingSeconds % 60;
+        document.getElementById('pomodoroTimer').textContent = 
+          `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      });
+
+      window.notificationAPI.onPomodoroWorkStarted((data) => {
+        document.getElementById('pomodoroPhase').textContent = '💼 Work Session';
+        document.getElementById('pomodoroCycle').textContent = `Cycle ${data.cycle}`;
+        showStatus('Work session started!');
+      });
+
+      window.notificationAPI.onPomodoroBreakStarted((data) => {
+        document.getElementById('pomodoroPhase').textContent = data.isLongBreak ? '🌟 Long Break' : '☕ Break Time';
+        showStatus(data.isLongBreak ? 'Long break started!' : 'Break started!');
+      });
+
+      window.notificationAPI.onPomodoroSessionCompleted((data) => {
+        loadDailyStats();
+        loadAnalytics();
+      });
+    }
+
+    // Event listeners for Pomodoro settings
+    document.getElementById('pomodoroEnabled').addEventListener('change', async (e) => {
+      try {
+        if (e.target.checked) {
+          await window.notificationAPI.pomodoroEnable();
+          document.getElementById('pomodoroTimerSection').style.display = 'block';
+          await updatePomodoroStatus();
+          await updateUpcomingCycles();
+        } else {
+          await window.notificationAPI.pomodoroDisable();
+          document.getElementById('pomodoroTimerSection').style.display = 'none';
+        }
+        showStatus('Pomodoro mode ' + (e.target.checked ? 'enabled' : 'disabled'));
+      } catch (error) {
+        showStatus('Failed to toggle Pomodoro: ' + error.message, true);
+      }
+    });
+
+    document.getElementById('pomodoroWorkDuration').addEventListener('change', async (e) => {
+      try {
+        await window.notificationAPI.pomodoroUpdateSettings({ workDuration: parseInt(e.target.value) });
+        showStatus('Work duration updated');
+        await updateUpcomingCycles();
+      } catch (error) {
+        showStatus('Failed to update work duration: ' + error.message, true);
+      }
+    });
+
+    document.getElementById('pomodoroBreakDuration').addEventListener('change', async (e) => {
+      try {
+        await window.notificationAPI.pomodoroUpdateSettings({ breakDuration: parseInt(e.target.value) });
+        showStatus('Break duration updated');
+        await updateUpcomingCycles();
+      } catch (error) {
+        showStatus('Failed to update break duration: ' + error.message, true);
+      }
+    });
+
+    document.getElementById('pomodoroLongBreakDuration').addEventListener('change', async (e) => {
+      try {
+        await window.notificationAPI.pomodoroUpdateSettings({ longBreakDuration: parseInt(e.target.value) });
+        showStatus('Long break duration updated');
+        await updateUpcomingCycles();
+      } catch (error) {
+        showStatus('Failed to update long break duration: ' + error.message, true);
+      }
+    });
+
+    // Event listeners for Timer settings
+    document.getElementById('breakReminderEnabled').addEventListener('change', async (e) => {
+      try {
+        await window.notificationAPI.timerUpdateSettings({ breakReminderEnabled: e.target.checked });
+        showStatus('Break reminders ' + (e.target.checked ? 'enabled' : 'disabled'));
+      } catch (error) {
+        showStatus('Failed to toggle break reminders: ' + error.message, true);
+      }
+    });
+
+    document.getElementById('breakReminderInterval').addEventListener('change', async (e) => {
+      try {
+        await window.notificationAPI.timerUpdateSettings({ breakReminderInterval: parseInt(e.target.value) });
+        showStatus('Break reminder interval updated');
+      } catch (error) {
+        showStatus('Failed to update interval: ' + error.message, true);
+      }
+    });
+
     // Initialize on load
     initialize();
 
-    // Refresh stats and inbox periodically
+    // Refresh stats, inbox, and analytics periodically
     setInterval(() => {
       loadDailyStats();
       loadInbox();
+      loadAnalytics();
+      if (document.getElementById('pomodoroEnabled').checked) {
+        updatePomodoroStatus();
+      }
     }, 30000); // Every 30 seconds
   </script>
 </body>

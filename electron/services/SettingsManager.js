@@ -37,6 +37,17 @@ class SettingsManager extends EventEmitter {
       },
       overdue: {
         alertIntervalMinutes: 15
+      },
+      pomodoro: {
+        enabled: false,
+        workDuration: 25,
+        breakDuration: 5,
+        longBreakDuration: 15,
+        cyclesBeforeLongBreak: 4
+      },
+      timer: {
+        breakReminderEnabled: true,
+        breakReminderInterval: 60
       }
     };
   }
@@ -125,6 +136,14 @@ class SettingsManager extends EventEmitter {
       overdue: {
         ...defaults.overdue,
         ...(loadedSettings.overdue || {})
+      },
+      pomodoro: {
+        ...defaults.pomodoro,
+        ...(loadedSettings.pomodoro || {})
+      },
+      timer: {
+        ...defaults.timer,
+        ...(loadedSettings.timer || {})
       }
     };
   }
@@ -249,6 +268,100 @@ class SettingsManager extends EventEmitter {
     this.settings.overdue.alertIntervalMinutes = minutes;
     await this.save();
     this.emit('overdueAlertIntervalChanged', minutes);
+  }
+
+  /**
+   * Get Pomodoro settings
+   */
+  getPomodoroSettings() {
+    return { ...this.settings.pomodoro };
+  }
+
+  /**
+   * Update Pomodoro settings
+   */
+  async updatePomodoroSettings(updates) {
+    this.settings.pomodoro = {
+      ...this.settings.pomodoro,
+      ...updates
+    };
+    
+    await this.save();
+    this.emit('pomodoroSettingsUpdated', this.settings.pomodoro);
+  }
+
+  /**
+   * Enable/disable Pomodoro mode
+   */
+  async setPomodoroEnabled(enabled) {
+    this.settings.pomodoro.enabled = enabled;
+    await this.save();
+    this.emit('pomodoroEnabledChanged', enabled);
+  }
+
+  /**
+   * Set Pomodoro work duration
+   */
+  async setPomodoroWorkDuration(minutes) {
+    this.settings.pomodoro.workDuration = minutes;
+    await this.save();
+    this.emit('pomodoroWorkDurationChanged', minutes);
+  }
+
+  /**
+   * Set Pomodoro break duration
+   */
+  async setPomodoroBreakDuration(minutes) {
+    this.settings.pomodoro.breakDuration = minutes;
+    await this.save();
+    this.emit('pomodoroBreakDurationChanged', minutes);
+  }
+
+  /**
+   * Set Pomodoro long break duration
+   */
+  async setPomodoroLongBreakDuration(minutes) {
+    this.settings.pomodoro.longBreakDuration = minutes;
+    await this.save();
+    this.emit('pomodoroLongBreakDurationChanged', minutes);
+  }
+
+  /**
+   * Get timer settings
+   */
+  getTimerSettings() {
+    return { ...this.settings.timer };
+  }
+
+  /**
+   * Update timer settings
+   */
+  async updateTimerSettings(updates) {
+    this.settings.timer = {
+      ...this.settings.timer,
+      ...updates
+    };
+    
+    await this.save();
+    this.emit('timerSettingsUpdated', this.settings.timer);
+  }
+
+  /**
+   * Enable/disable break reminders
+   */
+  async setBreakReminderEnabled(enabled) {
+    this.settings.timer.breakReminderEnabled = enabled;
+    await this.save();
+    this.emit('breakReminderEnabledChanged', enabled);
+  }
+
+  /**
+   * Set break reminder interval
+   */
+  async setBreakReminderInterval(minutes) {
+    this.settings.timer.breakReminderInterval = minutes;
+    await this.save();
+    this.emit('breakReminderIntervalChanged', minutes);
   }
 
   /**
