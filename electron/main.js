@@ -4,6 +4,7 @@ const path = require('path');
 // Import services
 const NotificationService = require('./services/NotificationService');
 const TaskScheduler = require('./services/TaskScheduler');
+const TaskService = require('./services/TaskService');
 const EndOfDayService = require('./services/EndOfDayService');
 const SettingsManager = require('./services/SettingsManager');
 const InboxManager = require('./services/InboxManager');
@@ -17,6 +18,7 @@ const FocusMonitoringService = require('./services/FocusMonitoringService');
 let mainWindow;
 let notificationService;
 let taskScheduler;
+let taskService;
 let endOfDayService;
 let settingsManager;
 let inboxManager;
@@ -105,6 +107,10 @@ async function initializeServices() {
     timerService = new TimerService(notificationService);
     const timerSettings = settingsManager.getTimerSettings();
     await timerService.initialize(timerSettings);
+
+    // Initialize Task service
+    taskService = new TaskService(timerService);
+    await taskService.initialize();
 
     // Initialize Analytics service
     analyticsService = new AnalyticsService(timerService, taskScheduler, endOfDayService);
@@ -243,6 +249,40 @@ function setupEventListeners() {
       focusMonitoringService.startMonitoring();
     } else {
       focusMonitoringService.stopMonitoring();
+    }
+  });
+
+  // Task service events
+  taskService.on('taskCompleted', async (task) => {
+    // Record in analytics
+    if (analyticsService) {
+      await analyticsService.recordCompletedTask(task);
+    }
+    // Update daily stats
+    if (endOfDayService) {
+      endOfDayService.incrementTasksCompleted();
+    }
+    // Notify renderer
+    if (mainWindow) {
+      mainWindow.webContents.send('task-completed', task);
+    }
+  });
+
+  taskService.on('timerStarted', (data) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('task-timer-started', data);
+    }
+  });
+
+  taskService.on('timerPaused', (data) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('task-timer-paused', data);
+    }
+  });
+
+  taskService.on('timerResumed', (data) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('task-timer-resumed', data);
     }
   });
 }
@@ -644,6 +684,8 @@ function setupIpcHandlers() {
       console.error('Failed to populate test data:', error);
       return { success: false, error: error.message };
     }
+  });
+
   // Gamification management
   ipcMain.handle('gamification-calculate-xp', async (event, taskData) => {
     return gamificationService.calculateTaskXP(taskData);
@@ -759,6 +801,111 @@ function setupIpcHandlers() {
     return { success: true };
   });
 
+  // Task management
+  ipcMain.handle('task-create', async (event, taskData) => {
+    try {
+      const task = await taskService.createTask(taskData);
+      return { success: true, task };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('task-update', async (event, taskId, updates) => {
+    try {
+      const task = await taskService.updateTask(taskId, updates);
+      return { success: true, task };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('task-delete', async (event, taskId) => {
+    try {
+      await taskService.deleteTask(taskId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('task-get-all', async () => {
+    return taskService.getAllTasks();
+  });
+
+  ipcMain.handle('task-get-by-id', async (event, taskId) => {
+    return taskService.getTask(taskId);
+  });
+
+  ipcMain.handle('task-get-by-status', async (event, status) => {
+    return taskService.getTasksByStatus(status);
+  });
+
+  ipcMain.handle('task-get-filtered', async (event, filters) => {
+    return taskService.getTasksFiltered(filters);
+  });
+
+  ipcMain.handle('task-start-timer', async (event, taskId) => {
+    try {
+      const task = await taskService.startTimer(taskId);
+      return { success: true, task };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('task-pause-timer', async () => {
+    try {
+      const task = await taskService.pauseTimer();
+      return { success: true, task };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('task-resume-timer', async (event, taskId) => {
+    try {
+      const task = await taskService.resumeTimer(taskId);
+      return { success: true, task };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('task-complete', async (event, taskId) => {
+    try {
+      const task = await taskService.completeTask(taskId);
+      return { success: true, task };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('task-get-active', async () => {
+    return taskService.getActiveTask();
+  });
+
+  ipcMain.handle('task-get-time-logs', async (event, taskId) => {
+    return taskService.getTimeLogs(taskId);
+  });
+
+  ipcMain.handle('task-get-all-categories', async () => {
+    return taskService.getAllCategories();
+  });
+
+  ipcMain.handle('task-get-all-tags', async () => {
+    return taskService.getAllTags();
+  });
+
+  ipcMain.handle('task-mark-rollovers', async () => {
+    try {
+      const count = await taskService.markRollovers();
+      return { success: true, count };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle('focus-monitoring-clear-log', async () => {
     await focusMonitoringService.clearDistractionLog();
     return { success: true };
@@ -783,6 +930,10 @@ function cleanup() {
 
   if (timerService) {
     timerService.shutdown();
+  }
+
+  if (taskService) {
+    taskService.shutdown();
   }
 
   if (focusMonitoringService) {

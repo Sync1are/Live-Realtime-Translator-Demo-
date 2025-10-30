@@ -125,5 +125,37 @@ contextBridge.exposeInMainWorld('notificationAPI', {
   },
   onFocusAutoPauseTriggered: (callback) => {
     ipcRenderer.on('focus-auto-pause-triggered', (event, data) => callback(data));
+  },
+
+  // Task management
+  taskCreate: (taskData) => ipcRenderer.invoke('task-create', taskData),
+  taskUpdate: (taskId, updates) => ipcRenderer.invoke('task-update', taskId, updates),
+  taskDelete: (taskId) => ipcRenderer.invoke('task-delete', taskId),
+  taskGetAll: () => ipcRenderer.invoke('task-get-all'),
+  taskGetById: (taskId) => ipcRenderer.invoke('task-get-by-id', taskId),
+  taskGetByStatus: (status) => ipcRenderer.invoke('task-get-by-status', status),
+  taskGetFiltered: (filters) => ipcRenderer.invoke('task-get-filtered', filters),
+  taskStartTimer: (taskId) => ipcRenderer.invoke('task-start-timer', taskId),
+  taskPauseTimer: () => ipcRenderer.invoke('task-pause-timer'),
+  taskResumeTimer: (taskId) => ipcRenderer.invoke('task-resume-timer', taskId),
+  taskComplete: (taskId) => ipcRenderer.invoke('task-complete', taskId),
+  taskGetActive: () => ipcRenderer.invoke('task-get-active'),
+  taskGetTimeLogs: (taskId) => ipcRenderer.invoke('task-get-time-logs', taskId),
+  taskGetAllCategories: () => ipcRenderer.invoke('task-get-all-categories'),
+  taskGetAllTags: () => ipcRenderer.invoke('task-get-all-tags'),
+  taskMarkRollovers: () => ipcRenderer.invoke('task-mark-rollovers'),
+
+  // Task events
+  onTaskCompleted: (callback) => {
+    ipcRenderer.on('task-completed', (event, task) => callback(task));
+  },
+  onTaskTimerStarted: (callback) => {
+    ipcRenderer.on('task-timer-started', (event, data) => callback(data));
+  },
+  onTaskTimerPaused: (callback) => {
+    ipcRenderer.on('task-timer-paused', (event, data) => callback(data));
+  },
+  onTaskTimerResumed: (callback) => {
+    ipcRenderer.on('task-timer-resumed', (event, data) => callback(data));
   }
 });
