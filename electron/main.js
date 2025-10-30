@@ -10,6 +10,7 @@ const InboxManager = require('./services/InboxManager');
 const PomodoroService = require('./services/PomodoroService');
 const TimerService = require('./services/TimerService');
 const AnalyticsService = require('./services/AnalyticsService');
+const GamificationService = require('./services/GamificationService');
 
 // Service instances
 let mainWindow;
@@ -21,6 +22,7 @@ let inboxManager;
 let pomodoroService;
 let timerService;
 let analyticsService;
+let gamificationService;
 
 /**
  * Create the main application window
@@ -92,6 +94,9 @@ async function initializeServices() {
     // Initialize Analytics service
     analyticsService = new AnalyticsService(timerService, taskScheduler, endOfDayService);
     await analyticsService.initialize();
+    // Initialize Gamification service
+    gamificationService = new GamificationService();
+    await gamificationService.initialize();
 
     // Set up event listeners
     setupEventListeners();
@@ -598,6 +603,66 @@ function setupIpcHandlers() {
       console.error('Failed to populate test data:', error);
       return { success: false, error: error.message };
     }
+  // Gamification management
+  ipcMain.handle('gamification-calculate-xp', async (event, taskData) => {
+    return gamificationService.calculateTaskXP(taskData);
+  });
+
+  ipcMain.handle('gamification-calculate-level', async (event, totalXP) => {
+    return gamificationService.calculateLevel(totalXP);
+  });
+
+  ipcMain.handle('gamification-get-level-progress', async (event, totalXP, currentLevel) => {
+    return gamificationService.getLevelProgress(totalXP, currentLevel);
+  });
+
+  ipcMain.handle('gamification-check-achievements', async (event, stats, unlockedAchievements) => {
+    return gamificationService.checkAchievements(stats, unlockedAchievements);
+  });
+
+  ipcMain.handle('gamification-update-streak', async (event, lastCompletionDate) => {
+    return gamificationService.updateStreak(lastCompletionDate);
+  });
+
+  ipcMain.handle('gamification-get-daily-goal-progress', async (event, todayStats) => {
+    return gamificationService.getDailyGoalProgress(todayStats);
+  });
+
+  ipcMain.handle('gamification-get-weekly-goal-progress', async (event, weekStats) => {
+    return gamificationService.getWeeklyGoalProgress(weekStats);
+  });
+
+  ipcMain.handle('gamification-get-all-achievements', async () => {
+    return gamificationService.getAllAchievements();
+  });
+
+  ipcMain.handle('gamification-get-settings', async () => {
+    return settingsManager.getGamificationSettings();
+  });
+
+  ipcMain.handle('gamification-update-settings', async (event, settings) => {
+    await settingsManager.updateGamificationSettings(settings);
+    return { success: true };
+  });
+
+  ipcMain.handle('gamification-set-enabled', async (event, enabled) => {
+    await settingsManager.setGamificationEnabled(enabled);
+    return { success: true };
+  });
+
+  ipcMain.handle('gamification-set-confetti-enabled', async (event, enabled) => {
+    await settingsManager.setConfettiEnabled(enabled);
+    return { success: true };
+  });
+
+  ipcMain.handle('gamification-set-animation-enabled', async (event, enabled) => {
+    await settingsManager.setAnimationEnabled(enabled);
+    return { success: true };
+  });
+
+  ipcMain.handle('gamification-set-sound-enabled', async (event, enabled) => {
+    await settingsManager.setSoundEnabled(enabled);
+    return { success: true };
   });
 }
 

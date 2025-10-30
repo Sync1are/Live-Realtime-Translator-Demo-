@@ -48,6 +48,12 @@ class SettingsManager extends EventEmitter {
       timer: {
         breakReminderEnabled: true,
         breakReminderInterval: 60
+      },
+      gamification: {
+        enabled: true,
+        confettiEnabled: true,
+        animationEnabled: true,
+        soundEnabled: true
       }
     };
   }
@@ -144,6 +150,10 @@ class SettingsManager extends EventEmitter {
       timer: {
         ...defaults.timer,
         ...(loadedSettings.timer || {})
+      },
+      gamification: {
+        ...defaults.gamification,
+        ...(loadedSettings.gamification || {})
       }
     };
   }
@@ -362,6 +372,62 @@ class SettingsManager extends EventEmitter {
     this.settings.timer.breakReminderInterval = minutes;
     await this.save();
     this.emit('breakReminderIntervalChanged', minutes);
+  }
+
+  /**
+   * Get gamification settings
+   */
+  getGamificationSettings() {
+    return { ...this.settings.gamification };
+  }
+
+  /**
+   * Update gamification settings
+   */
+  async updateGamificationSettings(updates) {
+    this.settings.gamification = {
+      ...this.settings.gamification,
+      ...updates
+    };
+    
+    await this.save();
+    this.emit('gamificationSettingsUpdated', this.settings.gamification);
+  }
+
+  /**
+   * Enable/disable gamification
+   */
+  async setGamificationEnabled(enabled) {
+    this.settings.gamification.enabled = enabled;
+    await this.save();
+    this.emit('gamificationEnabledChanged', enabled);
+  }
+
+  /**
+   * Enable/disable confetti
+   */
+  async setConfettiEnabled(enabled) {
+    this.settings.gamification.confettiEnabled = enabled;
+    await this.save();
+    this.emit('confettiEnabledChanged', enabled);
+  }
+
+  /**
+   * Enable/disable animations
+   */
+  async setAnimationEnabled(enabled) {
+    this.settings.gamification.animationEnabled = enabled;
+    await this.save();
+    this.emit('animationEnabledChanged', enabled);
+  }
+
+  /**
+   * Enable/disable sound
+   */
+  async setSoundEnabled(enabled) {
+    this.settings.gamification.soundEnabled = enabled;
+    await this.save();
+    this.emit('soundEnabledChanged', enabled);
   }
 
   /**

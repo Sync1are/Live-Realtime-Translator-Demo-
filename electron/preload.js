@@ -64,6 +64,21 @@ contextBridge.exposeInMainWorld('notificationAPI', {
   analyticsSetDailyGoals: (goals) => ipcRenderer.invoke('analytics-set-daily-goals', goals),
   analyticsGetDailyGoals: () => ipcRenderer.invoke('analytics-get-daily-goals'),
   analyticsPopulateTestData: () => ipcRenderer.invoke('analytics-populate-test-data'),
+  // Gamification
+  gamificationCalculateXP: (taskData) => ipcRenderer.invoke('gamification-calculate-xp', taskData),
+  gamificationCalculateLevel: (totalXP) => ipcRenderer.invoke('gamification-calculate-level', totalXP),
+  gamificationGetLevelProgress: (totalXP, currentLevel) => ipcRenderer.invoke('gamification-get-level-progress', totalXP, currentLevel),
+  gamificationCheckAchievements: (stats, unlockedAchievements) => ipcRenderer.invoke('gamification-check-achievements', stats, unlockedAchievements),
+  gamificationUpdateStreak: (lastCompletionDate) => ipcRenderer.invoke('gamification-update-streak', lastCompletionDate),
+  gamificationGetDailyGoalProgress: (todayStats) => ipcRenderer.invoke('gamification-get-daily-goal-progress', todayStats),
+  gamificationGetWeeklyGoalProgress: (weekStats) => ipcRenderer.invoke('gamification-get-weekly-goal-progress', weekStats),
+  gamificationGetAllAchievements: () => ipcRenderer.invoke('gamification-get-all-achievements'),
+  gamificationGetSettings: () => ipcRenderer.invoke('gamification-get-settings'),
+  gamificationUpdateSettings: (settings) => ipcRenderer.invoke('gamification-update-settings', settings),
+  gamificationSetEnabled: (enabled) => ipcRenderer.invoke('gamification-set-enabled', enabled),
+  gamificationSetConfettiEnabled: (enabled) => ipcRenderer.invoke('gamification-set-confetti-enabled', enabled),
+  gamificationSetAnimationEnabled: (enabled) => ipcRenderer.invoke('gamification-set-animation-enabled', enabled),
+  gamificationSetSoundEnabled: (enabled) => ipcRenderer.invoke('gamification-set-sound-enabled', enabled),
 
   // Event listeners
   onNotificationClicked: (callback) => {

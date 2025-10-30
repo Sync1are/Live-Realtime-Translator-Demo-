@@ -176,6 +176,222 @@
       background: #ffebee;
       border-left-color: #f44336;
     }
+
+    /* Gamification Styles */
+    .gamification-widget {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 25px;
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .xp-section {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .xp-value {
+      font-size: 48px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .xp-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .level-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .level-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+      transition: width 0.3s ease;
+    }
+
+    .goals-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .goal-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .goal-title {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 10px;
+    }
+
+    .goal-progress {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .goal-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .goal-bar-fill {
+      height: 100%;
+      background: #4caf50;
+      transition: width 0.3s ease;
+    }
+
+    .achievements-section {
+      margin-top: 20px;
+    }
+
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .achievement-badge {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .achievement-badge:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    .achievement-badge.unlocked {
+      background: rgba(76, 175, 80, 0.3);
+      border: 2px solid #4caf50;
+    }
+
+    .achievement-badge.locked {
+      opacity: 0.4;
+    }
+
+    .achievement-icon {
+      font-size: 32px;
+      margin-bottom: 5px;
+    }
+
+    .achievement-name {
+      font-size: 10px;
+      word-wrap: break-word;
+    }
+
+    .achievement-tooltip {
+      position: relative;
+    }
+
+    .gamification-settings {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .celebration-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .completion-animation {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 300px;
+      pointer-events: none;
+      z-index: 10000;
+    }
+
+    .xp-popup {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
+      z-index: 10001;
+      animation: slideIn 0.3s ease-out, slideOut 0.3s ease-in 2.7s;
+      animation-fill-mode: forwards;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
+
+    .xp-popup-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .xp-popup-amount {
+      font-size: 32px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -210,6 +426,85 @@
         <div class="stat-card">
           <div class="stat-value" id="pendingRollovers">0</div>
           <div class="stat-label">Pending Rollovers</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gamification Widget -->
+    <div class="section">
+      <div class="gamification-widget" id="gamificationWidget">
+        <h2 style="margin-bottom: 20px;">🏆 Your Progress</h2>
+        
+        <!-- XP and Level -->
+        <div class="xp-section">
+          <div class="xp-value" id="totalXP">0 XP</div>
+          <div class="xp-label">Total Experience</div>
+        </div>
+        
+        <div class="level-info">
+          <div class="level-badge" id="currentLevel">Level 1</div>
+          <div id="xpToNextLevel">0 / 100 XP</div>
+        </div>
+        
+        <div class="progress-bar">
+          <div class="progress-fill" id="levelProgress" style="width: 0%"></div>
+        </div>
+        
+        <!-- Daily and Weekly Goals -->
+        <div class="goals-section">
+          <div class="goal-card">
+            <div class="goal-title">Daily Tasks</div>
+            <div class="goal-progress" id="dailyTasksProgress">0 / 5</div>
+            <div class="goal-bar">
+              <div class="goal-bar-fill" id="dailyTasksBar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="goal-card">
+            <div class="goal-title">Daily Focus (min)</div>
+            <div class="goal-progress" id="dailyFocusProgress">0 / 120</div>
+            <div class="goal-bar">
+              <div class="goal-bar-fill" id="dailyFocusBar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="goal-card">
+            <div class="goal-title">Weekly Tasks</div>
+            <div class="goal-progress" id="weeklyTasksProgress">0 / 25</div>
+            <div class="goal-bar">
+              <div class="goal-bar-fill" id="weeklyTasksBar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="goal-card">
+            <div class="goal-title">Weekly Focus (min)</div>
+            <div class="goal-progress" id="weeklyFocusProgress">0 / 600</div>
+            <div class="goal-bar">
+              <div class="goal-bar-fill" id="weeklyFocusBar" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Achievements -->
+        <div class="achievements-section">
+          <h3 style="font-size: 16px; margin-bottom: 10px;">Achievements</h3>
+          <div class="achievements-grid" id="achievementsGrid">
+            <!-- Achievements will be populated here -->
+          </div>
+        </div>
+        
+        <!-- Gamification Settings -->
+        <div class="gamification-settings">
+          <div class="control-group" style="color: white;">
+            <label for="confettiEnabled" style="color: white;">Confetti Effects</label>
+            <input type="checkbox" id="confettiEnabled" checked>
+          </div>
+          <div class="control-group" style="color: white; margin-top: 10px;">
+            <label for="animationEnabled" style="color: white;">Animations</label>
+            <input type="checkbox" id="animationEnabled" checked>
+          </div>
+          <div class="control-group" style="color: white; margin-top: 10px;">
+            <label for="soundEnabled" style="color: white;">Sound Effects</label>
+            <input type="checkbox" id="soundEnabled" checked>
+          </div>
+          <button onclick="testTaskCompletion()" style="margin-top: 15px; width: 100%;">🎯 Test Task Completion</button>
         </div>
       </div>
     </div>
@@ -354,10 +649,24 @@
     <div id="statusMessage"></div>
   </div>
 
+  <!-- Celebration Overlay -->
+  <canvas id="confettiCanvas" class="celebration-overlay"></canvas>
+  <div id="animationContainer" class="completion-animation"></div>
+
+  <!-- Load external libraries -->
+  <script src="../node_modules/canvas-confetti/dist/confetti.browser.js"></script>
+  <script src="../node_modules/lottie-web/build/player/lottie.min.js"></script>
+  <script src="services/StorageService.js"></script>
+
   <script>
     // Initialize
     let currentSettings = {};
     let pomodoroStatus = null;
+
+    // Gamification state
+    let storageService = null;
+    let gamificationState = null;
+    let unlockedAchievements = [];
 
     // Load settings and stats on startup
     async function initialize() {
@@ -367,8 +676,343 @@
       await loadPomodoroSettings();
       await loadTimerSettings();
       await loadAnalytics();
+      await initializeGamification();
       setupPomodoroEventListeners();
     }
+
+    // Initialize gamification system
+    async function initializeGamification() {
+      try {
+        // Initialize IndexedDB storage
+        storageService = new StorageService();
+        await storageService.initialize();
+
+        // Load gamification state
+        gamificationState = await storageService.getGamificationState();
+        const achievements = await storageService.getUnlockedAchievements();
+        unlockedAchievements = achievements.map(a => a.id);
+
+        // Load settings
+        const settings = await window.notificationAPI.gamificationGetSettings();
+        document.getElementById('confettiEnabled').checked = settings.confettiEnabled;
+        document.getElementById('animationEnabled').checked = settings.animationEnabled;
+        document.getElementById('soundEnabled').checked = settings.soundEnabled;
+
+        // Update UI
+        await updateGamificationUI();
+
+        console.log('Gamification initialized:', gamificationState);
+      } catch (error) {
+        console.error('Failed to initialize gamification:', error);
+      }
+    }
+
+    // Update gamification UI
+    async function updateGamificationUI() {
+      try {
+        // Update XP and Level
+        document.getElementById('totalXP').textContent = `${gamificationState.totalXP} XP`;
+        document.getElementById('currentLevel').textContent = `Level ${gamificationState.level}`;
+
+        // Update level progress
+        const progress = await window.notificationAPI.gamificationGetLevelProgress(
+          gamificationState.totalXP,
+          gamificationState.level
+        );
+        document.getElementById('levelProgress').style.width = `${progress.percentage}%`;
+        document.getElementById('xpToNextLevel').textContent = `${progress.current} / ${progress.needed} XP`;
+
+        // Update daily stats
+        const todayStats = await storageService.getTodayStats();
+        const dailyGoals = await window.notificationAPI.gamificationGetDailyGoalProgress(todayStats);
+        
+        document.getElementById('dailyTasksProgress').textContent = 
+          `${dailyGoals.tasks.current} / ${dailyGoals.tasks.goal}`;
+        document.getElementById('dailyTasksBar').style.width = `${dailyGoals.tasks.percentage}%`;
+        
+        document.getElementById('dailyFocusProgress').textContent = 
+          `${dailyGoals.focusTime.current} / ${dailyGoals.focusTime.goal}`;
+        document.getElementById('dailyFocusBar').style.width = `${dailyGoals.focusTime.percentage}%`;
+
+        // Update weekly stats
+        const weekStats = await storageService.getWeekStats();
+        const weeklyGoals = await window.notificationAPI.gamificationGetWeeklyGoalProgress(weekStats);
+        
+        document.getElementById('weeklyTasksProgress').textContent = 
+          `${weeklyGoals.tasks.current} / ${weeklyGoals.tasks.goal}`;
+        document.getElementById('weeklyTasksBar').style.width = `${weeklyGoals.tasks.percentage}%`;
+        
+        document.getElementById('weeklyFocusProgress').textContent = 
+          `${weeklyGoals.focusTime.current} / ${weeklyGoals.focusTime.goal}`;
+        document.getElementById('weeklyFocusBar').style.width = `${weeklyGoals.focusTime.percentage}%`;
+
+        // Update achievements
+        await updateAchievementsUI();
+
+      } catch (error) {
+        console.error('Failed to update gamification UI:', error);
+      }
+    }
+
+    // Update achievements UI
+    async function updateAchievementsUI() {
+      try {
+        const allAchievements = await window.notificationAPI.gamificationGetAllAchievements();
+        const grid = document.getElementById('achievementsGrid');
+        
+        grid.innerHTML = allAchievements.map(achievement => {
+          const unlocked = unlockedAchievements.includes(achievement.id);
+          return `
+            <div class="achievement-badge ${unlocked ? 'unlocked' : 'locked'}" 
+                 title="${achievement.description}">
+              <div class="achievement-icon">${achievement.icon}</div>
+              <div class="achievement-name">${achievement.name}</div>
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Failed to update achievements UI:', error);
+      }
+    }
+
+    // Handle task completion
+    async function onTaskCompleted(taskData) {
+      try {
+        // Add current streak to taskData for XP calculation
+        taskData.currentStreak = gamificationState.currentStreak;
+
+        // Calculate XP for this task
+        const xpEarned = await window.notificationAPI.gamificationCalculateXP(taskData);
+
+        // Update streak
+        const streakUpdate = await window.notificationAPI.gamificationUpdateStreak(
+          gamificationState.lastCompletionDate
+        );
+        if (streakUpdate) {
+          gamificationState.currentStreak = streakUpdate.currentStreak;
+          gamificationState.longestStreak = streakUpdate.longestStreak;
+          gamificationState.lastCompletionDate = streakUpdate.lastCompletionDate;
+        }
+
+        // Update total XP and level
+        const oldLevel = gamificationState.level;
+        gamificationState.totalXP += xpEarned;
+        gamificationState.totalTasksCompleted += 1;
+        
+        // Track beat estimate
+        if (taskData.estimatedTime && taskData.actualTime) {
+          const percentDiff = (taskData.estimatedTime - taskData.actualTime) / taskData.estimatedTime;
+          if (percentDiff >= 0.2) {
+            gamificationState.beatEstimateCount += 1;
+          }
+        }
+
+        const newLevel = await window.notificationAPI.gamificationCalculateLevel(gamificationState.totalXP);
+        gamificationState.level = newLevel;
+
+        // Update daily and weekly stats
+        const today = new Date().toISOString().split('T')[0];
+        await storageService.updateDailyStats(today, {
+          tasksCompleted: (await storageService.getTodayStats()).tasksCompleted + 1,
+          focusTime: (await storageService.getTodayStats()).focusTime + (taskData.focusTime || 0)
+        });
+
+        await storageService.updateWeekStats({
+          tasksCompleted: (await storageService.getWeekStats()).tasksCompleted + 1,
+          focusTime: (await storageService.getWeekStats()).focusTime + (taskData.focusTime || 0)
+        });
+
+        // Save state
+        await storageService.saveGamificationState(gamificationState);
+
+        // Check for new achievements
+        const stats = {
+          ...gamificationState,
+          todayFocusTime: (await storageService.getTodayStats()).focusTime
+        };
+        const newAchievements = await window.notificationAPI.gamificationCheckAchievements(
+          stats,
+          unlockedAchievements
+        );
+
+        // Unlock new achievements
+        for (const achievement of newAchievements) {
+          await storageService.unlockAchievement(achievement);
+          unlockedAchievements.push(achievement.id);
+        }
+
+        // Show celebration
+        await showTaskCompletionCelebration(xpEarned, newLevel > oldLevel, newAchievements);
+
+        // Update UI
+        await updateGamificationUI();
+
+      } catch (error) {
+        console.error('Failed to handle task completion:', error);
+      }
+    }
+
+    // Show celebration effects
+    async function showTaskCompletionCelebration(xpEarned, leveledUp, newAchievements) {
+      const settings = await window.notificationAPI.gamificationGetSettings();
+
+      // Show XP popup
+      showXPPopup(xpEarned, leveledUp);
+
+      // Confetti effect
+      if (settings.confettiEnabled) {
+        triggerConfetti();
+      }
+
+      // Checkmark animation
+      if (settings.animationEnabled) {
+        showCheckmarkAnimation();
+      }
+
+      // Sound effect
+      if (settings.soundEnabled) {
+        playCompletionSound();
+      }
+
+      // Show achievement notifications
+      if (newAchievements && newAchievements.length > 0) {
+        for (const achievement of newAchievements) {
+          setTimeout(() => {
+            showAchievementNotification(achievement);
+          }, 1000);
+        }
+      }
+    }
+
+    // Show XP popup
+    function showXPPopup(xpEarned, leveledUp) {
+      const popup = document.createElement('div');
+      popup.className = 'xp-popup';
+      popup.innerHTML = `
+        <div class="xp-popup-title">${leveledUp ? '🎉 Level Up!' : '✅ Task Completed!'}</div>
+        <div class="xp-popup-amount">+${xpEarned} XP</div>
+      `;
+      document.body.appendChild(popup);
+
+      setTimeout(() => {
+        popup.remove();
+      }, 3000);
+    }
+
+    // Trigger confetti
+    function triggerConfetti() {
+      const canvas = document.getElementById('confettiCanvas');
+      const myConfetti = confetti.create(canvas, {
+        resize: true,
+        useWorker: true
+      });
+
+      myConfetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+
+    // Show checkmark animation
+    function showCheckmarkAnimation() {
+      const container = document.getElementById('animationContainer');
+      container.style.display = 'block';
+      
+      // Simple checkmark animation using CSS
+      container.innerHTML = `
+        <svg viewBox="0 0 100 100" style="width: 100%; height: 100%;">
+          <circle cx="50" cy="50" r="45" fill="#4caf50" />
+          <path d="M 25 50 L 40 65 L 75 30" stroke="white" stroke-width="8" 
+                fill="none" stroke-linecap="round" stroke-linejoin="round"
+                style="stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 0.5s ease-out forwards;" />
+        </svg>
+        <style>
+          @keyframes draw {
+            to { stroke-dashoffset: 0; }
+          }
+        </style>
+      `;
+
+      setTimeout(() => {
+        container.style.display = 'none';
+        container.innerHTML = '';
+      }, 1500);
+    }
+
+    // Play completion sound
+    function playCompletionSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+      oscillator.type = 'sine';
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+
+      // Second tone
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode2 = audioContext.createGain();
+      
+      oscillator2.connect(gainNode2);
+      gainNode2.connect(audioContext.destination);
+      
+      oscillator2.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+      oscillator2.type = 'sine';
+      
+      gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime + 0.1);
+      gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+      
+      oscillator2.start(audioContext.currentTime + 0.1);
+      oscillator2.stop(audioContext.currentTime + 0.4);
+    }
+
+    // Show achievement notification
+    function showAchievementNotification(achievement) {
+      const notification = document.createElement('div');
+      notification.className = 'xp-popup';
+      notification.innerHTML = `
+        <div class="xp-popup-title">🏆 Achievement Unlocked!</div>
+        <div style="font-size: 48px; margin: 10px 0;">${achievement.icon}</div>
+        <div style="font-size: 18px; font-weight: bold;">${achievement.name}</div>
+        <div style="font-size: 14px; opacity: 0.9;">${achievement.description}</div>
+      `;
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.remove();
+      }, 4000);
+    }
+
+    // Test task completion function
+    async function testTaskCompletion() {
+      await onTaskCompleted({
+        focusTime: 25,
+        estimatedTime: 30,
+        actualTime: 23
+      });
+    }
+
+    // Event listeners for gamification settings
+    document.getElementById('confettiEnabled').addEventListener('change', async (e) => {
+      await window.notificationAPI.gamificationSetConfettiEnabled(e.target.checked);
+    });
+
+    document.getElementById('animationEnabled').addEventListener('change', async (e) => {
+      await window.notificationAPI.gamificationSetAnimationEnabled(e.target.checked);
+    });
+
+    document.getElementById('soundEnabled').addEventListener('change', async (e) => {
+      await window.notificationAPI.gamificationSetSoundEnabled(e.target.checked);
+    });
 
     // Load settings
     async function loadSettings() {
