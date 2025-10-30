@@ -58,6 +58,12 @@ contextBridge.exposeInMainWorld('notificationAPI', {
   timerUpdateSettings: (settings) => ipcRenderer.invoke('timer-update-settings', settings),
   timerGetSettings: () => ipcRenderer.invoke('timer-get-settings'),
 
+  // Analytics
+  analyticsGetDailyDashboard: (date) => ipcRenderer.invoke('analytics-get-daily-dashboard', date),
+  analyticsGetWeeklyDashboard: (weekStartDate) => ipcRenderer.invoke('analytics-get-weekly-dashboard', weekStartDate),
+  analyticsSetDailyGoals: (goals) => ipcRenderer.invoke('analytics-set-daily-goals', goals),
+  analyticsGetDailyGoals: () => ipcRenderer.invoke('analytics-get-daily-goals'),
+  analyticsPopulateTestData: () => ipcRenderer.invoke('analytics-populate-test-data'),
   // Gamification
   gamificationCalculateXP: (taskData) => ipcRenderer.invoke('gamification-calculate-xp', taskData),
   gamificationCalculateLevel: (totalXP) => ipcRenderer.invoke('gamification-calculate-level', totalXP),

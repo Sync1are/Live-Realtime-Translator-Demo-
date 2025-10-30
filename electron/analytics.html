@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Dashboards</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React and ReactDOM (required for Recharts) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Recharts -->
+  <script src="https://unpkg.com/recharts@2.10.3/dist/Recharts.js"></script>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="container mx-auto px-4 py-6 max-w-7xl">
+    <!-- Navigation Tabs -->
+    <div class="mb-6">
+      <nav class="flex space-x-4 border-b border-gray-200">
+        <button onclick="showDashboard('daily')" id="dailyTab" class="px-4 py-2 text-sm font-medium text-indigo-600 border-b-2 border-indigo-600">
+          Daily Dashboard
+        </button>
+        <button onclick="showDashboard('weekly')" id="weeklyTab" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300">
+          Weekly Dashboard
+        </button>
+        <button onclick="populateTestData()" class="ml-auto px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700">
+          📊 Generate Test Data
+        </button>
+        <button onclick="goBack()" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
+          ← Back to Main
+        </button>
+      </nav>
+    </div>
+
+    <!-- Daily Dashboard -->
+    <div id="dailyDashboard" class="dashboard-view">
+      <!-- Date Navigation -->
+      <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div class="flex items-center justify-between">
+          <button onclick="changeDay(-1)" class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+            ← Previous Day
+          </button>
+          <div class="text-center">
+            <input type="date" id="dailyDatePicker" onchange="loadDailyDashboard(this.value)" 
+                   class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <div class="text-sm text-gray-500 mt-1" id="dailyDateDisplay"></div>
+          </div>
+          <button onclick="changeDay(1)" class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+            Next Day →
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="text-sm font-medium text-gray-500">Completed Tasks</div>
+          <div class="mt-2 flex items-baseline">
+            <div class="text-3xl font-semibold text-gray-900" id="dailyCompletedCount">0</div>
+            <div class="ml-2 text-sm text-gray-500">/ <span id="dailyTaskGoal">5</span> goal</div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="text-sm font-medium text-gray-500">Focus Time</div>
+          <div class="mt-2 flex items-baseline">
+            <div class="text-3xl font-semibold text-gray-900" id="dailyFocusTime">0</div>
+            <div class="ml-2 text-sm text-gray-500">min</div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="text-sm font-medium text-gray-500">Break Time</div>
+          <div class="mt-2 flex items-baseline">
+            <div class="text-3xl font-semibold text-gray-900" id="dailyBreakTime">0</div>
+            <div class="ml-2 text-sm text-gray-500">min</div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="text-sm font-medium text-gray-500">Focus/Break Ratio</div>
+          <div class="mt-2 text-3xl font-semibold text-gray-900" id="dailyFocusBreakRatio">-</div>
+        </div>
+      </div>
+
+      <!-- Goal Progress -->
+      <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Goal Progress</h3>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-gray-600">Focus Time Goal</span>
+              <span class="text-gray-900"><span id="focusTimeProgress">0</span>%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+              <div id="focusTimeBar" class="bg-indigo-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-gray-600">Tasks Completed Goal</span>
+              <span class="text-gray-900"><span id="tasksProgress">0</span>%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+              <div id="tasksBar" class="bg-green-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tasks by Status -->
+      <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Tasks by Status</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500 mb-2">Pending</div>
+            <div class="text-2xl font-semibold text-yellow-600" id="pendingTasksCount">0</div>
+            <div id="pendingTasksList" class="mt-3 space-y-2 text-sm text-gray-600 max-h-48 overflow-y-auto"></div>
+          </div>
+          
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500 mb-2">In Progress</div>
+            <div class="text-2xl font-semibold text-blue-600" id="inProgressTasksCount">0</div>
+            <div id="inProgressTasksList" class="mt-3 space-y-2 text-sm text-gray-600 max-h-48 overflow-y-auto"></div>
+          </div>
+          
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500 mb-2">Completed</div>
+            <div class="text-2xl font-semibold text-green-600" id="completedTasksCount">0</div>
+            <div id="completedTasksList" class="mt-3 space-y-2 text-sm text-gray-600 max-h-48 overflow-y-auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly Dashboard -->
+    <div id="weeklyDashboard" class="dashboard-view hidden">
+      <!-- Week Navigation -->
+      <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div class="flex items-center justify-between">
+          <button onclick="changeWeek(-1)" class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+            ← Previous Week
+          </button>
+          <div class="text-center">
+            <div class="text-lg font-medium text-gray-900" id="weeklyDateDisplay">Week</div>
+            <div class="text-sm text-gray-500 mt-1" id="weeklyDateRange"></div>
+          </div>
+          <button onclick="changeWeek(1)" class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+            Next Week →
+          </button>
+        </div>
+      </div>
+
+      <!-- Weekly Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="text-sm font-medium text-gray-500">Tasks Completed</div>
+          <div class="mt-2 text-3xl font-semibold text-gray-900" id="weeklyTasksCompleted">0</div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="text-sm font-medium text-gray-500">Total Productive Hours</div>
+          <div class="mt-2 flex items-baseline">
+            <div class="text-3xl font-semibold text-gray-900" id="weeklyProductiveHours">0</div>
+            <div class="ml-2 text-sm text-gray-500">hrs</div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="text-sm font-medium text-gray-500">Avg Completion Rate</div>
+          <div class="mt-2 flex items-baseline">
+            <div class="text-3xl font-semibold text-gray-900" id="weeklyAvgRate">0</div>
+            <div class="ml-2 text-sm text-gray-500">/ day</div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="text-sm font-medium text-gray-500">Weekly Streak</div>
+          <div class="mt-2 flex items-baseline">
+            <div class="text-3xl font-semibold text-gray-900" id="weeklyStreak">0</div>
+            <div class="ml-2 text-sm text-gray-500">days</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Most Productive Day -->
+      <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Most Productive Day</h3>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-2xl font-semibold text-indigo-600" id="mostProductiveDay">-</div>
+            <div class="text-sm text-gray-500 mt-1">
+              <span id="mostProductiveFocusTime">0</span> min focus time, 
+              <span id="mostProductiveTasks">0</span> tasks
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Productive Hours by Day Chart -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Productive Hours by Day</h3>
+          <div id="productiveHoursChart" class="w-full" style="height: 300px;"></div>
+        </div>
+
+        <!-- Time per Category Chart -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Time per Category</h3>
+          <div id="categoryChart" class="w-full" style="height: 300px;"></div>
+        </div>
+      </div>
+
+      <!-- Daily Breakdown Table -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Daily Breakdown</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Focus Time</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Break Time</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tasks</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Productive Hours</th>
+              </tr>
+            </thead>
+            <tbody id="dailyBreakdownTable" class="bg-white divide-y divide-gray-200">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentDailyDate = new Date();
+    let currentWeekStart = new Date();
+    
+    // Initialize
+    async function initialize() {
+      // Set current date
+      const today = new Date();
+      currentDailyDate = today;
+      document.getElementById('dailyDatePicker').valueAsDate = today;
+      
+      // Calculate week start (Monday)
+      const dayOfWeek = today.getDay();
+      const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+      currentWeekStart = new Date(today.setDate(diff));
+      currentWeekStart.setHours(0, 0, 0, 0);
+      
+      // Load initial data
+      await loadDailyDashboard();
+      await loadWeeklyDashboard();
+    }
+
+    // Load daily dashboard
+    async function loadDailyDashboard(dateStr = null) {
+      try {
+        if (dateStr) {
+          currentDailyDate = new Date(dateStr);
+        }
+        
+        const data = await window.notificationAPI.analyticsGetDailyDashboard(currentDailyDate.toISOString());
+        
+        // Update date display
+        const dateDisplay = currentDailyDate.toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+        document.getElementById('dailyDateDisplay').textContent = dateDisplay;
+        
+        // Update stats
+        document.getElementById('dailyCompletedCount').textContent = data.completedCount;
+        document.getElementById('dailyFocusTime').textContent = data.totalTimeWorked;
+        document.getElementById('dailyBreakTime').textContent = data.totalBreakTime;
+        document.getElementById('dailyFocusBreakRatio').textContent = data.focusBreakRatio;
+        
+        // Update goals
+        document.getElementById('dailyTaskGoal').textContent = data.goals.tasks.target;
+        document.getElementById('focusTimeProgress').textContent = Math.round(data.goals.focusTime.progress);
+        document.getElementById('focusTimeBar').style.width = data.goals.focusTime.progress + '%';
+        document.getElementById('tasksProgress').textContent = Math.round(data.goals.tasks.progress);
+        document.getElementById('tasksBar').style.width = data.goals.tasks.progress + '%';
+        
+        // Update tasks by status
+        updateTasksList('pending', data.tasks.pending);
+        updateTasksList('inProgress', data.tasks.in_progress);
+        updateTasksList('completed', data.tasks.completed);
+        
+      } catch (error) {
+        console.error('Failed to load daily dashboard:', error);
+      }
+    }
+
+    // Load weekly dashboard
+    async function loadWeeklyDashboard() {
+      try {
+        const data = await window.notificationAPI.analyticsGetWeeklyDashboard(currentWeekStart.toISOString());
+        
+        // Update date display
+        const weekEndDate = new Date(currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+        const dateRange = `${formatDate(data.weekStart)} - ${formatDate(data.weekEnd)}`;
+        document.getElementById('weeklyDateRange').textContent = dateRange;
+        document.getElementById('weeklyDateDisplay').textContent = 'Week Overview';
+        
+        // Update stats
+        document.getElementById('weeklyTasksCompleted').textContent = data.tasksCompleted;
+        document.getElementById('weeklyProductiveHours').textContent = data.totalProductiveHours;
+        document.getElementById('weeklyAvgRate').textContent = data.averageCompletionRate;
+        document.getElementById('weeklyStreak').textContent = data.weeklyStreak;
+        
+        // Update most productive day
+        if (data.mostProductiveDay) {
+          document.getElementById('mostProductiveDay').textContent = data.mostProductiveDay.dayName;
+          document.getElementById('mostProductiveFocusTime').textContent = data.mostProductiveDay.focusTime;
+          document.getElementById('mostProductiveTasks').textContent = data.mostProductiveDay.tasksCompleted;
+        }
+        
+        // Update daily breakdown table
+        updateDailyBreakdownTable(data.dailyData);
+        
+        // Render charts
+        renderProductiveHoursChart(data.dailyData);
+        renderCategoryChart(data.categoryBreakdown);
+        
+      } catch (error) {
+        console.error('Failed to load weekly dashboard:', error);
+      }
+    }
+
+    // Update tasks list
+    function updateTasksList(status, tasks) {
+      const countId = status === 'inProgress' ? 'inProgressTasksCount' : status + 'TasksCount';
+      const listId = status === 'inProgress' ? 'inProgressTasksList' : status + 'TasksList';
+      
+      document.getElementById(countId).textContent = tasks.length;
+      
+      const listEl = document.getElementById(listId);
+      if (tasks.length === 0) {
+        listEl.innerHTML = '<div class="text-gray-400 italic">No tasks</div>';
+      } else {
+        listEl.innerHTML = tasks.slice(0, 5).map(task => 
+          `<div class="truncate">${task.title || 'Untitled'}</div>`
+        ).join('');
+        if (tasks.length > 5) {
+          listEl.innerHTML += `<div class="text-gray-400 italic">+${tasks.length - 5} more</div>`;
+        }
+      }
+    }
+
+    // Update daily breakdown table
+    function updateDailyBreakdownTable(dailyData) {
+      const tbody = document.getElementById('dailyBreakdownTable');
+      tbody.innerHTML = dailyData.map(day => `
+        <tr>
+          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+            ${day.dayName} <span class="text-gray-500">(${formatDate(day.date)})</span>
+          </td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${day.focusTime} min</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${day.breakTime} min</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${day.tasksCompleted}</td>
+          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${day.productiveHours} hrs</td>
+        </tr>
+      `).join('');
+    }
+
+    // Render productive hours chart
+    function renderProductiveHoursChart(dailyData) {
+      const chartData = dailyData.map(day => ({
+        name: day.dayName,
+        hours: parseFloat(day.productiveHours),
+        tasks: day.tasksCompleted
+      }));
+
+      const container = document.getElementById('productiveHoursChart');
+      
+      const root = ReactDOM.createRoot(container);
+      root.render(
+        React.createElement(Recharts.ResponsiveContainer, { width: '100%', height: 300 },
+          React.createElement(Recharts.BarChart, { data: chartData },
+            React.createElement(Recharts.CartesianGrid, { strokeDasharray: '3 3' }),
+            React.createElement(Recharts.XAxis, { dataKey: 'name' }),
+            React.createElement(Recharts.YAxis),
+            React.createElement(Recharts.Tooltip),
+            React.createElement(Recharts.Legend),
+            React.createElement(Recharts.Bar, { dataKey: 'hours', fill: '#4f46e5', name: 'Productive Hours' }),
+            React.createElement(Recharts.Bar, { dataKey: 'tasks', fill: '#10b981', name: 'Tasks Completed' })
+          )
+        )
+      );
+    }
+
+    // Render category chart
+    function renderCategoryChart(categoryData) {
+      const chartData = categoryData.map(cat => ({
+        name: cat.name,
+        value: cat.focusTime || cat.count,
+        count: cat.count
+      }));
+
+      const container = document.getElementById('categoryChart');
+      
+      if (chartData.length === 0) {
+        container.innerHTML = '<div class="flex items-center justify-center h-full text-gray-400">No data available</div>';
+        return;
+      }
+
+      const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+      
+      const root = ReactDOM.createRoot(container);
+      root.render(
+        React.createElement(Recharts.ResponsiveContainer, { width: '100%', height: 300 },
+          React.createElement(Recharts.PieChart, {},
+            React.createElement(Recharts.Pie, {
+              data: chartData,
+              cx: '50%',
+              cy: '50%',
+              labelLine: false,
+              label: (entry) => entry.name,
+              outerRadius: 80,
+              fill: '#8884d8',
+              dataKey: 'value'
+            }, chartData.map((entry, index) => 
+              React.createElement(Recharts.Cell, { 
+                key: `cell-${index}`, 
+                fill: COLORS[index % COLORS.length] 
+              })
+            )),
+            React.createElement(Recharts.Tooltip)
+          )
+        )
+      );
+    }
+
+    // Navigation functions
+    function showDashboard(type) {
+      const dailyDashboard = document.getElementById('dailyDashboard');
+      const weeklyDashboard = document.getElementById('weeklyDashboard');
+      const dailyTab = document.getElementById('dailyTab');
+      const weeklyTab = document.getElementById('weeklyTab');
+
+      if (type === 'daily') {
+        dailyDashboard.classList.remove('hidden');
+        weeklyDashboard.classList.add('hidden');
+        dailyTab.classList.add('text-indigo-600', 'border-indigo-600');
+        dailyTab.classList.remove('text-gray-500', 'border-transparent');
+        weeklyTab.classList.remove('text-indigo-600', 'border-indigo-600');
+        weeklyTab.classList.add('text-gray-500', 'border-transparent');
+      } else {
+        dailyDashboard.classList.add('hidden');
+        weeklyDashboard.classList.remove('hidden');
+        weeklyTab.classList.add('text-indigo-600', 'border-indigo-600');
+        weeklyTab.classList.remove('text-gray-500', 'border-transparent');
+        dailyTab.classList.remove('text-indigo-600', 'border-indigo-600');
+        dailyTab.classList.add('text-gray-500', 'border-transparent');
+      }
+    }
+
+    function changeDay(delta) {
+      currentDailyDate.setDate(currentDailyDate.getDate() + delta);
+      document.getElementById('dailyDatePicker').valueAsDate = currentDailyDate;
+      loadDailyDashboard();
+    }
+
+    function changeWeek(delta) {
+      currentWeekStart.setDate(currentWeekStart.getDate() + (delta * 7));
+      loadWeeklyDashboard();
+    }
+
+    function goBack() {
+      window.location.href = 'index.html';
+    }
+
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    async function populateTestData() {
+      if (confirm('This will generate test data for the past 7 days. Continue?')) {
+        try {
+          const result = await window.notificationAPI.analyticsPopulateTestData();
+          if (result.success) {
+            alert('Test data generated successfully! Refreshing dashboards...');
+            await loadDailyDashboard();
+            await loadWeeklyDashboard();
+          } else {
+            alert('Failed to generate test data: ' + result.error);
+          }
+        } catch (error) {
+          console.error('Error populating test data:', error);
+          alert('Error: ' + error.message);
+        }
+      }
+    }
+
+    // Initialize on load
+    initialize();
+  </script>
+</body>
+</html>
