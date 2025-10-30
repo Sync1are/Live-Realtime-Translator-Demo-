@@ -106,6 +106,10 @@ class TaskScheduler extends EventEmitter {
     }
 
     task.status = status;
+    const taskCopy = { ...task };
+
+    // Emit event before potentially removing the task
+    this.emit('taskStatusUpdated', { taskId, status, task: taskCopy });
 
     // If task is completed, remove all scheduled items
     if (status === 'completed') {
@@ -115,8 +119,6 @@ class TaskScheduler extends EventEmitter {
     else if (status === 'in_progress') {
       this.scheduleOverdueCheck(task);
     }
-
-    this.emit('taskStatusUpdated', { taskId, status });
   }
 
   /**

@@ -9,6 +9,7 @@ const SettingsManager = require('./services/SettingsManager');
 const InboxManager = require('./services/InboxManager');
 const PomodoroService = require('./services/PomodoroService');
 const TimerService = require('./services/TimerService');
+const AnalyticsService = require('./services/AnalyticsService');
 
 // Service instances
 let mainWindow;
@@ -19,6 +20,7 @@ let settingsManager;
 let inboxManager;
 let pomodoroService;
 let timerService;
+let analyticsService;
 
 /**
  * Create the main application window
@@ -87,6 +89,10 @@ async function initializeServices() {
     const timerSettings = settingsManager.getTimerSettings();
     await timerService.initialize(timerSettings);
 
+    // Initialize Analytics service
+    analyticsService = new AnalyticsService(timerService, taskScheduler, endOfDayService);
+    await analyticsService.initialize();
+
     // Set up event listeners
     setupEventListeners();
 
@@ -133,6 +139,12 @@ function setupEventListeners() {
 
   taskScheduler.on('overdueSent', ({ task, minutesOverdue }) => {
     console.log(`Overdue alert sent for task: ${task.title} (${minutesOverdue} min overdue)`);
+  });
+
+  taskScheduler.on('taskStatusUpdated', ({ taskId, status, task }) => {
+    if (status === 'completed' && task) {
+      analyticsService.recordCompletedTask(task);
+    }
   });
 
   // Pomodoro service events
@@ -546,6 +558,46 @@ function setupIpcHandlers() {
 
   ipcMain.handle('timer-get-settings', async () => {
     return timerService.getSettings();
+  });
+
+  // Analytics management
+  ipcMain.handle('analytics-get-daily-dashboard', async (event, date) => {
+    return analyticsService.getDailyDashboard(date);
+  });
+
+  ipcMain.handle('analytics-get-weekly-dashboard', async (event, weekStartDate) => {
+    return analyticsService.getWeeklyDashboard(weekStartDate);
+  });
+
+  ipcMain.handle('analytics-set-daily-goals', async (event, goals) => {
+    analyticsService.setDailyGoals(goals);
+    return { success: true };
+  });
+
+  ipcMain.handle('analytics-get-daily-goals', async () => {
+    return analyticsService.getDailyGoals();
+  });
+
+  ipcMain.handle('analytics-populate-test-data', async () => {
+    try {
+      const { generateTestData } = require('./examples/populate-test-data');
+      const { sessions, taskHistory } = generateTestData();
+      
+      // Load test data into services
+      for (const session of sessions) {
+        timerService.sessions.push(session);
+      }
+      await timerService.saveSessions();
+      
+      for (const task of taskHistory) {
+        await analyticsService.recordCompletedTask(task);
+      }
+      
+      return { success: true, message: 'Test data populated successfully' };
+    } catch (error) {
+      console.error('Failed to populate test data:', error);
+      return { success: false, error: error.message };
+    }
   });
 }
 

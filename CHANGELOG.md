@@ -1,6 +1,116 @@
 # Changelog
 
-## [Unreleased] - History & Export Features
+## [Unreleased] - Analytics Dashboards
+
+### Added
+
+#### Analytics Dashboards
+- **Daily Dashboard**: Comprehensive view of daily productivity
+  - Tasks grouped by status (Pending, In Progress, Completed)
+  - Total time worked vs daily goal with progress bars
+  - Focus vs break ratio calculation
+  - Completed task count with goal tracking
+  - Visual goal progress indicators
+  - Date navigation (date picker + previous/next buttons)
+  
+- **Weekly Dashboard**: Aggregated weekly productivity insights
+  - Tasks completed for the week
+  - Total productive hours (focus time in hours)
+  - Average completion rate (tasks per day)
+  - Weekly streak tracking (consecutive productive days)
+  - Most productive day highlight with metrics
+  - Interactive bar chart showing daily productive hours
+  - Pie chart displaying time distribution by category
+  - Daily breakdown table with full week statistics
+
+#### Analytics Service (`electron/services/AnalyticsService.js`)
+- Core service for data aggregation and analytics computation
+- Methods:
+  - `getDailyDashboard(date)`: Returns daily metrics and task breakdowns
+  - `getWeeklyDashboard(weekStartDate)`: Returns weekly statistics
+  - `recordCompletedTask(task)`: Persists task completion history
+  - `setDailyGoals(goals)`: Configure focus time and task goals
+  - `getDailyGoals()`: Retrieve current goal settings
+- Integrates with TimerService for session data
+- Integrates with TaskScheduler for current task status
+- Persistent storage in `task-history.json`
+
+#### Chart Components
+- **Recharts Integration**: Lightweight React-based charting library
+- **Bar Chart**: Productive hours by day with dual metrics
+  - Daily focus hours visualization
+  - Tasks completed overlay
+  - Interactive tooltips
+- **Pie Chart**: Time distribution by task category
+  - Color-coded category segments
+  - Percentage breakdown
+  - Interactive tooltips
+- Fully responsive with `ResponsiveContainer`
+
+#### UI Components
+- **New Analytics Page** (`electron/analytics.html`)
+  - Tab navigation between Daily and Weekly views
+  - Styled with Tailwind CSS
+  - Responsive layout (tablet to desktop, min 768px)
+  - CDN-based libraries (no build step required)
+  
+- **Navigation Button**: Added to main page for easy access
+- **Test Data Generator**: Populate sample data for demonstration
+  - Generates 7 days of realistic data
+  - 3-6 focus sessions per day
+  - 1-3 break sessions per day
+  - 2-5 completed tasks per day with categories
+
+#### Documentation
+- `ANALYTICS_GUIDE.md`: Complete user guide and API reference
+- `ANALYTICS_IMPLEMENTATION.md`: Technical implementation details
+- `ANALYTICS_QUICKSTART.md`: Quick start guide for new users
+
+### Changed
+
+#### TaskScheduler (`electron/services/TaskScheduler.js`)
+- Modified `updateTaskStatus` to emit full task data in events
+- Event payload now includes: `{ taskId, status, task }`
+- Ensures task data availability before removal on completion
+
+#### Main Process (`electron/main.js`)
+- Added AnalyticsService initialization
+- New IPC handlers for analytics:
+  - `analytics-get-daily-dashboard`
+  - `analytics-get-weekly-dashboard`
+  - `analytics-set-daily-goals`
+  - `analytics-get-daily-goals`
+  - `analytics-populate-test-data`
+- Event listener for task completion to trigger analytics recording
+
+#### Preload Script (`electron/preload.js`)
+- Exposed analytics API methods to renderer process:
+  - `analyticsGetDailyDashboard(date)`
+  - `analyticsGetWeeklyDashboard(weekStartDate)`
+  - `analyticsSetDailyGoals(goals)`
+  - `analyticsGetDailyGoals()`
+  - `analyticsPopulateTestData()`
+
+### Technical Details
+
+#### Dependencies
+- **Tailwind CSS**: Utility-first CSS framework (CDN)
+- **React 18**: Required for Recharts (CDN)
+- **React DOM 18**: React rendering library (CDN)
+- **Recharts 2.10.3**: Chart library (CDN)
+
+#### Data Sources
+- Timer sessions from TimerService (`timer-sessions.json`)
+- Task history from AnalyticsService (`task-history.json`)
+- Current tasks from TaskScheduler (in-memory)
+
+#### Performance
+- Efficient date-based filtering
+- Minimal file I/O with caching
+- Responsive chart rendering
+- Real-time metric updates
+
+## [Previous] - History & Export Features
 
 ### Added
 
