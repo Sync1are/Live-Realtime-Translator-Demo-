@@ -55,3 +55,11 @@ package-lock.json
 out/
 dist-electron/
 release/
+
+# TypeScript build output
+dist/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+.nyc_output/
