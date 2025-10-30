@@ -631,6 +631,64 @@
       </div>
     </div>
 
+    <!-- Focus Monitoring Settings -->
+    <div class="section">
+      <h2>Focus Monitoring</h2>
+      <div class="controls">
+        <div class="control-group">
+          <label for="focusMonitoringEnabled">Enable Focus Monitoring</label>
+          <input type="checkbox" id="focusMonitoringEnabled" onchange="toggleFocusMonitoring(this.checked)">
+        </div>
+        <div class="control-group">
+          <label for="graceCountdownDuration">Grace Period (seconds)</label>
+          <input type="number" id="graceCountdownDuration" min="5" max="60" value="10" onchange="updateGraceCountdown(this.value)">
+        </div>
+      </div>
+
+      <!-- Whitelist Management -->
+      <h3 style="margin-top: 20px;">Whitelist (Allowed Apps/URLs)</h3>
+      <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+        <select id="whitelistType" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+          <option value="app">App</option>
+          <option value="url">URL Pattern</option>
+        </select>
+        <input type="text" id="whitelistPattern" placeholder="e.g., Chrome, slack.com/*" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        <button onclick="addToWhitelist()">Add</button>
+      </div>
+      <div id="whitelistItems" style="margin-bottom: 20px;"></div>
+
+      <!-- Blacklist Management -->
+      <h3>Blacklist (Blocked Apps/URLs)</h3>
+      <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+        <select id="blacklistType" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+          <option value="app">App</option>
+          <option value="url">URL Pattern</option>
+        </select>
+        <input type="text" id="blacklistPattern" placeholder="e.g., Facebook, twitter.com/*" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        <button onclick="addToBlacklist()">Add</button>
+      </div>
+      <div id="blacklistItems" style="margin-bottom: 20px;"></div>
+    </div>
+
+    <!-- Focus Activity Panel -->
+    <div class="section">
+      <h2>Focus Activity - Distraction Log</h2>
+      <div style="margin-bottom: 15px;">
+        <button onclick="refreshDistractionLog()">Refresh</button>
+        <button onclick="clearDistractionLog()" class="secondary">Clear All</button>
+      </div>
+      <div id="distractionLog">
+        <p style="color: #999; padding: 20px; text-align: center;">No distractions logged yet</p>
+      </div>
+    </div>
+
+    <!-- Grace Countdown Banner -->
+    <div id="graceCountdownBanner" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff9800; color: white; padding: 15px 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 1000; min-width: 400px; text-align: center;">
+      <div style="font-weight: bold; margin-bottom: 5px;">⚠️ Focus Warning</div>
+      <div id="graceCountdownText">Returning focus in <span id="graceCountdownSeconds">10</span> seconds...</div>
+      <div style="margin-top: 10px; font-size: 12px; opacity: 0.9;">Return to the app to cancel timer pause</div>
+    </div>
+
     <!-- Inbox -->
     <div class="section">
       <h2>Notification Inbox (<span id="unreadCount">0</span> unread)</h2>
@@ -672,7 +730,9 @@
       await loadTimerSettings();
       await loadAnalytics();
       await initializeGamification();
+      await loadFocusMonitoringSettings();
       setupPomodoroEventListeners();
+      setupFocusMonitoringEventListeners();
     }
 
     // Initialize gamification system
@@ -1423,6 +1483,278 @@
       }
     });
 
+    // Focus Monitoring Functions
+    let graceCountdownInterval = null;
+    let graceCountdownSecondsRemaining = 10;
+
+    async function loadFocusMonitoringSettings() {
+      try {
+        const settings = await window.notificationAPI.focusMonitoringGetSettings();
+        document.getElementById('focusMonitoringEnabled').checked = settings.enabled;
+        document.getElementById('graceCountdownDuration').value = settings.graceCountdownDuration;
+        
+        renderWhitelist(settings.whitelist);
+        renderBlacklist(settings.blacklist);
+        await refreshDistractionLog();
+      } catch (error) {
+        console.error('Failed to load focus monitoring settings:', error);
+      }
+    }
+
+    async function toggleFocusMonitoring(enabled) {
+      try {
+        await window.notificationAPI.focusMonitoringSetEnabled(enabled);
+        showStatus('Focus monitoring ' + (enabled ? 'enabled' : 'disabled'));
+      } catch (error) {
+        showStatus('Failed to toggle focus monitoring: ' + error.message, true);
+      }
+    }
+
+    async function updateGraceCountdown(seconds) {
+      try {
+        await window.notificationAPI.focusMonitoringUpdateSettings({ graceCountdownDuration: parseInt(seconds) });
+        showStatus('Grace countdown duration updated');
+      } catch (error) {
+        showStatus('Failed to update grace countdown: ' + error.message, true);
+      }
+    }
+
+    function renderWhitelist(whitelist) {
+      const container = document.getElementById('whitelistItems');
+      if (!whitelist || whitelist.length === 0) {
+        container.innerHTML = '<p style="color: #999; padding: 10px;">No whitelist entries</p>';
+        return;
+      }
+
+      container.innerHTML = whitelist.map((entry, index) => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f0f0f0; margin-bottom: 5px; border-radius: 4px;">
+          <span><strong>${entry.type}:</strong> ${entry.pattern}</span>
+          <button onclick="removeFromWhitelist(${index})" class="secondary" style="padding: 5px 10px; font-size: 12px;">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    function renderBlacklist(blacklist) {
+      const container = document.getElementById('blacklistItems');
+      if (!blacklist || blacklist.length === 0) {
+        container.innerHTML = '<p style="color: #999; padding: 10px;">No blacklist entries</p>';
+        return;
+      }
+
+      container.innerHTML = blacklist.map((entry, index) => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f0f0f0; margin-bottom: 5px; border-radius: 4px;">
+          <span><strong>${entry.type}:</strong> ${entry.pattern}</span>
+          <button onclick="removeFromBlacklist(${index})" class="secondary" style="padding: 5px 10px; font-size: 12px;">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    async function addToWhitelist() {
+      const type = document.getElementById('whitelistType').value;
+      const pattern = document.getElementById('whitelistPattern').value.trim();
+
+      if (!pattern) {
+        showStatus('Please enter a pattern', true);
+        return;
+      }
+
+      try {
+        await window.notificationAPI.focusMonitoringAddToWhitelist({ type, pattern });
+        document.getElementById('whitelistPattern').value = '';
+        const settings = await window.notificationAPI.focusMonitoringGetSettings();
+        renderWhitelist(settings.whitelist);
+        showStatus('Added to whitelist');
+      } catch (error) {
+        showStatus('Failed to add to whitelist: ' + error.message, true);
+      }
+    }
+
+    async function removeFromWhitelist(index) {
+      try {
+        await window.notificationAPI.focusMonitoringRemoveFromWhitelist(index);
+        const settings = await window.notificationAPI.focusMonitoringGetSettings();
+        renderWhitelist(settings.whitelist);
+        showStatus('Removed from whitelist');
+      } catch (error) {
+        showStatus('Failed to remove from whitelist: ' + error.message, true);
+      }
+    }
+
+    async function addToBlacklist() {
+      const type = document.getElementById('blacklistType').value;
+      const pattern = document.getElementById('blacklistPattern').value.trim();
+
+      if (!pattern) {
+        showStatus('Please enter a pattern', true);
+        return;
+      }
+
+      try {
+        await window.notificationAPI.focusMonitoringAddToBlacklist({ type, pattern });
+        document.getElementById('blacklistPattern').value = '';
+        const settings = await window.notificationAPI.focusMonitoringGetSettings();
+        renderBlacklist(settings.blacklist);
+        showStatus('Added to blacklist');
+      } catch (error) {
+        showStatus('Failed to add to blacklist: ' + error.message, true);
+      }
+    }
+
+    async function removeFromBlacklist(index) {
+      try {
+        await window.notificationAPI.focusMonitoringRemoveFromBlacklist(index);
+        const settings = await window.notificationAPI.focusMonitoringGetSettings();
+        renderBlacklist(settings.blacklist);
+        showStatus('Removed from blacklist');
+      } catch (error) {
+        showStatus('Failed to remove from blacklist: ' + error.message, true);
+      }
+    }
+
+    async function refreshDistractionLog() {
+      try {
+        const log = await window.notificationAPI.focusMonitoringGetDistractionLog(50, 0);
+        renderDistractionLog(log);
+      } catch (error) {
+        console.error('Failed to refresh distraction log:', error);
+      }
+    }
+
+    function renderDistractionLog(log) {
+      const container = document.getElementById('distractionLog');
+      
+      if (!log || log.length === 0) {
+        container.innerHTML = '<p style="color: #999; padding: 20px; text-align: center;">No distractions logged yet</p>';
+        return;
+      }
+
+      container.innerHTML = log.map(entry => {
+        const date = new Date(entry.timestamp);
+        const durationSeconds = Math.round(entry.duration / 1000);
+        const typeLabel = entry.type === 'blacklisted' ? '🚫 Blacklisted' : '⚠️ Unfocused';
+
+        return `
+          <div style="border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 10px; background: #fafafa;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+              <div>
+                <div style="font-weight: bold; margin-bottom: 5px;">${typeLabel}: ${entry.appName}</div>
+                <div style="font-size: 12px; color: #666;">
+                  ${date.toLocaleString()} • Duration: ${durationSeconds}s
+                </div>
+                ${entry.windowTitle ? `<div style="font-size: 12px; color: #888; margin-top: 3px;">Window: ${entry.windowTitle}</div>` : ''}
+                ${entry.url ? `<div style="font-size: 12px; color: #888;">URL: ${entry.url}</div>` : ''}
+              </div>
+              <button onclick="deleteDistraction('${entry.id}')" class="secondary" style="padding: 5px 10px; font-size: 12px;">Delete</button>
+            </div>
+            ${entry.annotation ? 
+              `<div style="padding: 10px; background: #fff; border-left: 3px solid #007bff; margin-top: 10px;">
+                <strong>Note:</strong> ${entry.annotation}
+              </div>` : 
+              `<div style="margin-top: 10px;">
+                <input type="text" id="annotation-${entry.id}" placeholder="Add a note..." style="width: calc(100% - 80px); padding: 5px; border: 1px solid #ddd; border-radius: 4px; margin-right: 5px;">
+                <button onclick="annotateDistraction('${entry.id}')" style="padding: 5px 10px; font-size: 12px;">Save Note</button>
+              </div>`
+            }
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function annotateDistraction(distractionId) {
+      const input = document.getElementById(`annotation-${distractionId}`);
+      const annotation = input.value.trim();
+
+      if (!annotation) {
+        showStatus('Please enter a note', true);
+        return;
+      }
+
+      try {
+        await window.notificationAPI.focusMonitoringAnnotateDistraction(distractionId, annotation);
+        await refreshDistractionLog();
+        showStatus('Note saved');
+      } catch (error) {
+        showStatus('Failed to save note: ' + error.message, true);
+      }
+    }
+
+    async function deleteDistraction(distractionId) {
+      try {
+        await window.notificationAPI.focusMonitoringDeleteDistraction(distractionId);
+        await refreshDistractionLog();
+        showStatus('Distraction entry deleted');
+      } catch (error) {
+        showStatus('Failed to delete entry: ' + error.message, true);
+      }
+    }
+
+    async function clearDistractionLog() {
+      if (!confirm('Are you sure you want to clear the entire distraction log?')) {
+        return;
+      }
+
+      try {
+        await window.notificationAPI.focusMonitoringClearLog();
+        await refreshDistractionLog();
+        showStatus('Distraction log cleared');
+      } catch (error) {
+        showStatus('Failed to clear log: ' + error.message, true);
+      }
+    }
+
+    function setupFocusMonitoringEventListeners() {
+      window.notificationAPI.onFocusGraceStarted((data) => {
+        showGraceCountdownBanner(data);
+      });
+
+      window.notificationAPI.onFocusGraceCancelled(() => {
+        hideGraceCountdownBanner();
+      });
+
+      window.notificationAPI.onFocusAutoPauseTriggered((data) => {
+        hideGraceCountdownBanner();
+        showStatus('⏸️ Timer auto-paused due to distraction', true);
+        refreshDistractionLog();
+      });
+    }
+
+    function showGraceCountdownBanner(data) {
+      const banner = document.getElementById('graceCountdownBanner');
+      const text = data.target.type === 'blacklisted' 
+        ? `Blacklisted app detected: ${data.target.name}` 
+        : 'You left the app';
+      
+      document.getElementById('graceCountdownText').innerHTML = 
+        `${text}<br>Returning focus in <span id="graceCountdownSeconds">${data.duration}</span> seconds...`;
+      
+      banner.style.display = 'block';
+      graceCountdownSecondsRemaining = data.duration;
+
+      if (graceCountdownInterval) {
+        clearInterval(graceCountdownInterval);
+      }
+
+      graceCountdownInterval = setInterval(() => {
+        graceCountdownSecondsRemaining--;
+        document.getElementById('graceCountdownSeconds').textContent = graceCountdownSecondsRemaining;
+        
+        if (graceCountdownSecondsRemaining <= 0) {
+          clearInterval(graceCountdownInterval);
+          graceCountdownInterval = null;
+        }
+      }, 1000);
+    }
+
+    function hideGraceCountdownBanner() {
+      const banner = document.getElementById('graceCountdownBanner');
+      banner.style.display = 'none';
+      
+      if (graceCountdownInterval) {
+        clearInterval(graceCountdownInterval);
+        graceCountdownInterval = null;
+      }
+    }
+
     // Initialize on load
     initialize();
 
@@ -1433,6 +1765,10 @@
       loadAnalytics();
       if (document.getElementById('pomodoroEnabled').checked) {
         updatePomodoroStatus();
+      }
+      // Refresh distraction log if focus monitoring is enabled
+      if (document.getElementById('focusMonitoringEnabled').checked) {
+        refreshDistractionLog();
       }
     }, 30000); // Every 30 seconds
   </script>

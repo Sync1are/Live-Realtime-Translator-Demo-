@@ -54,6 +54,12 @@ class SettingsManager extends EventEmitter {
         confettiEnabled: true,
         animationEnabled: true,
         soundEnabled: true
+      },
+      focusMonitoring: {
+        enabled: false,
+        graceCountdownDuration: 10,
+        whitelist: [],
+        blacklist: []
       }
     };
   }
@@ -154,6 +160,10 @@ class SettingsManager extends EventEmitter {
       gamification: {
         ...defaults.gamification,
         ...(loadedSettings.gamification || {})
+      },
+      focusMonitoring: {
+        ...defaults.focusMonitoring,
+        ...(loadedSettings.focusMonitoring || {})
       }
     };
   }
@@ -428,6 +438,62 @@ class SettingsManager extends EventEmitter {
     this.settings.gamification.soundEnabled = enabled;
     await this.save();
     this.emit('soundEnabledChanged', enabled);
+  }
+
+  /**
+   * Get focus monitoring settings
+   */
+  getFocusMonitoringSettings() {
+    return { ...this.settings.focusMonitoring };
+  }
+
+  /**
+   * Update focus monitoring settings
+   */
+  async updateFocusMonitoringSettings(updates) {
+    this.settings.focusMonitoring = {
+      ...this.settings.focusMonitoring,
+      ...updates
+    };
+    
+    await this.save();
+    this.emit('focusMonitoringSettingsUpdated', this.settings.focusMonitoring);
+  }
+
+  /**
+   * Enable/disable focus monitoring
+   */
+  async setFocusMonitoringEnabled(enabled) {
+    this.settings.focusMonitoring.enabled = enabled;
+    await this.save();
+    this.emit('focusMonitoringEnabledChanged', enabled);
+  }
+
+  /**
+   * Set grace countdown duration
+   */
+  async setGraceCountdownDuration(seconds) {
+    this.settings.focusMonitoring.graceCountdownDuration = seconds;
+    await this.save();
+    this.emit('graceCountdownDurationChanged', seconds);
+  }
+
+  /**
+   * Update whitelist
+   */
+  async updateWhitelist(whitelist) {
+    this.settings.focusMonitoring.whitelist = whitelist;
+    await this.save();
+    this.emit('whitelistUpdated', whitelist);
+  }
+
+  /**
+   * Update blacklist
+   */
+  async updateBlacklist(blacklist) {
+    this.settings.focusMonitoring.blacklist = blacklist;
+    await this.save();
+    this.emit('blacklistUpdated', blacklist);
   }
 
   /**

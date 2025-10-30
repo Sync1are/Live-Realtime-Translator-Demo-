@@ -95,5 +95,29 @@ contextBridge.exposeInMainWorld('notificationAPI', {
   },
   onPomodoroTimerTick: (callback) => {
     ipcRenderer.on('pomodoro-timer-tick', (event, data) => callback(data));
+  },
+
+  // Focus monitoring
+  focusMonitoringGetSettings: () => ipcRenderer.invoke('focus-monitoring-get-settings'),
+  focusMonitoringUpdateSettings: (settings) => ipcRenderer.invoke('focus-monitoring-update-settings', settings),
+  focusMonitoringSetEnabled: (enabled) => ipcRenderer.invoke('focus-monitoring-set-enabled', enabled),
+  focusMonitoringGetDistractionLog: (limit, offset) => ipcRenderer.invoke('focus-monitoring-get-distraction-log', limit, offset),
+  focusMonitoringAnnotateDistraction: (distractionId, annotation) => ipcRenderer.invoke('focus-monitoring-annotate-distraction', distractionId, annotation),
+  focusMonitoringDeleteDistraction: (distractionId) => ipcRenderer.invoke('focus-monitoring-delete-distraction', distractionId),
+  focusMonitoringAddToWhitelist: (entry) => ipcRenderer.invoke('focus-monitoring-add-to-whitelist', entry),
+  focusMonitoringRemoveFromWhitelist: (index) => ipcRenderer.invoke('focus-monitoring-remove-from-whitelist', index),
+  focusMonitoringAddToBlacklist: (entry) => ipcRenderer.invoke('focus-monitoring-add-to-blacklist', entry),
+  focusMonitoringRemoveFromBlacklist: (index) => ipcRenderer.invoke('focus-monitoring-remove-from-blacklist', index),
+  focusMonitoringClearLog: () => ipcRenderer.invoke('focus-monitoring-clear-log'),
+  
+  // Focus monitoring events
+  onFocusGraceStarted: (callback) => {
+    ipcRenderer.on('focus-grace-started', (event, data) => callback(data));
+  },
+  onFocusGraceCancelled: (callback) => {
+    ipcRenderer.on('focus-grace-cancelled', (event) => callback());
+  },
+  onFocusAutoPauseTriggered: (callback) => {
+    ipcRenderer.on('focus-auto-pause-triggered', (event, data) => callback(data));
   }
 });

@@ -9,13 +9,18 @@
     "example": "electron electron/examples/full-example.js",
     "test": "node electron/tests/NotificationService.test.js"
   },
-  "keywords": ["electron", "notifications", "task-management"],
+  "keywords": [
+    "electron",
+    "notifications",
+    "task-management"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0"
   },
   "dependencies": {
+    "active-win": "^8.2.1",
     "canvas-confetti": "^1.9.2",
     "lottie-web": "^5.12.2"
   }
