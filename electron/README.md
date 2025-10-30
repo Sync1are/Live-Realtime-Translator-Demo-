@@ -42,6 +42,16 @@ A comprehensive notification service for task management applications built with
 - Filter and search capabilities
 - Automatic cleanup (max 100 items)
 
+### 🎮 Gamification System
+- **XP & Leveling**: Earn experience points for completing tasks with 20 levels
+- **Achievements**: 15+ unique achievements across multiple categories
+- **Streak Tracking**: Maintain consecutive days of task completion for bonus XP
+- **Daily & Weekly Goals**: Track progress toward task and focus time goals
+- **Celebratory Feedback**: Confetti, animations, and sounds on task completion
+- **Persistent Storage**: All progress saved to IndexedDB
+
+See [GAMIFICATION_GUIDE.md](../GAMIFICATION_GUIDE.md) for detailed documentation.
+
 ## Architecture
 
 ### Services
@@ -122,6 +132,44 @@ const unreadCount = inboxManager.getUnreadCount();
 
 // Mark as read
 await inboxManager.markAsRead(itemId);
+```
+
+#### GamificationService
+Manages XP, achievements, streaks, and goals.
+
+```javascript
+const gamificationService = new GamificationService();
+await gamificationService.initialize();
+
+// Calculate XP for a completed task
+const xp = gamificationService.calculateTaskXP({
+  focusTime: 25,
+  currentStreak: 3,
+  estimatedTime: 30,
+  actualTime: 20
+});
+
+// Check for new achievements
+const newAchievements = gamificationService.checkAchievements(
+  stats,
+  unlockedAchievements
+);
+```
+
+#### StorageService (Renderer Process)
+Manages IndexedDB storage for gamification data.
+
+```javascript
+// In renderer process
+const storageService = new StorageService();
+await storageService.initialize();
+
+// Get/save gamification state
+const state = await storageService.getGamificationState();
+await storageService.saveGamificationState(updatedState);
+
+// Track daily stats
+await storageService.updateDailyStats(date, { tasksCompleted: 5, focusTime: 120 });
 ```
 
 ## Installation
