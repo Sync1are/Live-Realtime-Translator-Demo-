@@ -11,6 +11,7 @@ const PomodoroService = require('./services/PomodoroService');
 const TimerService = require('./services/TimerService');
 const AnalyticsService = require('./services/AnalyticsService');
 const GamificationService = require('./services/GamificationService');
+const FocusMonitoringService = require('./services/FocusMonitoringService');
 
 // Service instances
 let mainWindow;
@@ -23,6 +24,7 @@ let pomodoroService;
 let timerService;
 let analyticsService;
 let gamificationService;
+let focusMonitoringService;
 
 /**
  * Create the main application window
@@ -48,6 +50,19 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Focus monitoring events
+  mainWindow.on('focus', () => {
+    if (focusMonitoringService) {
+      focusMonitoringService.onAppFocus();
+    }
+  });
+
+  mainWindow.on('blur', () => {
+    if (focusMonitoringService) {
+      focusMonitoringService.onAppBlur();
+    }
   });
 }
 
@@ -97,6 +112,11 @@ async function initializeServices() {
     // Initialize Gamification service
     gamificationService = new GamificationService();
     await gamificationService.initialize();
+
+    // Initialize Focus Monitoring service
+    focusMonitoringService = new FocusMonitoringService(notificationService);
+    const focusMonitoringSettings = settingsManager.getFocusMonitoringSettings();
+    await focusMonitoringService.initialize(focusMonitoringSettings);
 
     // Set up event listeners
     setupEventListeners();
@@ -202,6 +222,27 @@ function setupEventListeners() {
       pomodoroService.enable();
     } else {
       pomodoroService.disable();
+    }
+  });
+
+  // Focus monitoring events
+  focusMonitoringService.on('autoPauseTriggered', (distraction) => {
+    // Auto-pause the timer
+    if (timerService.getCurrentSession()) {
+      timerService.endCurrentSession();
+      console.log('Timer auto-paused due to distraction:', distraction.appName);
+    }
+  });
+
+  settingsManager.on('focusMonitoringSettingsUpdated', (settings) => {
+    focusMonitoringService.updateSettings(settings);
+  });
+
+  settingsManager.on('focusMonitoringEnabledChanged', (enabled) => {
+    if (enabled) {
+      focusMonitoringService.startMonitoring();
+    } else {
+      focusMonitoringService.stopMonitoring();
     }
   });
 }
@@ -664,6 +705,64 @@ function setupIpcHandlers() {
     await settingsManager.setSoundEnabled(enabled);
     return { success: true };
   });
+
+  // Focus monitoring management
+  ipcMain.handle('focus-monitoring-get-settings', async () => {
+    return focusMonitoringService.getSettings();
+  });
+
+  ipcMain.handle('focus-monitoring-update-settings', async (event, settings) => {
+    await settingsManager.updateFocusMonitoringSettings(settings);
+    return { success: true };
+  });
+
+  ipcMain.handle('focus-monitoring-set-enabled', async (event, enabled) => {
+    await settingsManager.setFocusMonitoringEnabled(enabled);
+    return { success: true };
+  });
+
+  ipcMain.handle('focus-monitoring-get-distraction-log', async (event, limit, offset) => {
+    return focusMonitoringService.getDistractionLog(limit, offset);
+  });
+
+  ipcMain.handle('focus-monitoring-annotate-distraction', async (event, distractionId, annotation) => {
+    await focusMonitoringService.annotateDistraction(distractionId, annotation);
+    return { success: true };
+  });
+
+  ipcMain.handle('focus-monitoring-delete-distraction', async (event, distractionId) => {
+    await focusMonitoringService.deleteDistraction(distractionId);
+    return { success: true };
+  });
+
+  ipcMain.handle('focus-monitoring-add-to-whitelist', async (event, entry) => {
+    await focusMonitoringService.addToWhitelist(entry);
+    await settingsManager.updateWhitelist(focusMonitoringService.getSettings().whitelist);
+    return { success: true };
+  });
+
+  ipcMain.handle('focus-monitoring-remove-from-whitelist', async (event, index) => {
+    await focusMonitoringService.removeFromWhitelist(index);
+    await settingsManager.updateWhitelist(focusMonitoringService.getSettings().whitelist);
+    return { success: true };
+  });
+
+  ipcMain.handle('focus-monitoring-add-to-blacklist', async (event, entry) => {
+    await focusMonitoringService.addToBlacklist(entry);
+    await settingsManager.updateBlacklist(focusMonitoringService.getSettings().blacklist);
+    return { success: true };
+  });
+
+  ipcMain.handle('focus-monitoring-remove-from-blacklist', async (event, index) => {
+    await focusMonitoringService.removeFromBlacklist(index);
+    await settingsManager.updateBlacklist(focusMonitoringService.getSettings().blacklist);
+    return { success: true };
+  });
+
+  ipcMain.handle('focus-monitoring-clear-log', async () => {
+    await focusMonitoringService.clearDistractionLog();
+    return { success: true };
+  });
 }
 
 /**
@@ -685,6 +784,10 @@ function cleanup() {
   if (timerService) {
     timerService.shutdown();
   }
+
+  if (focusMonitoringService) {
+    focusMonitoringService.shutdown();
+  }
   
   console.log('Services cleaned up');
 }
@@ -694,6 +797,17 @@ app.whenReady().then(async () => {
   await initializeServices();
   setupIpcHandlers();
   createWindow();
+
+  // Set main window reference for focus monitoring
+  if (focusMonitoringService) {
+    focusMonitoringService.setMainWindow(mainWindow);
+    
+    // Start monitoring if enabled
+    const settings = focusMonitoringService.getSettings();
+    if (settings.enabled) {
+      focusMonitoringService.startMonitoring();
+    }
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
