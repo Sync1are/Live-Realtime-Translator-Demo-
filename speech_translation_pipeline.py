@@ -393,6 +393,8 @@ def main():
                        choices=["int8", "fp16", "float32"])
     parser.add_argument("--duration", type=int, default=60,
                        help="Run duration in seconds (0=infinite)")
+    parser.add_argument("--no-record", action="store_true",
+                       help="Disable session recording")
     
     args = parser.parse_args()
     
