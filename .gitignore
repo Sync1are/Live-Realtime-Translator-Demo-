@@ -27,11 +27,12 @@ ENV/
 env/
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo
 *~
+.vscode/*
+!.vscode/settings.json
 
 # Session data
 .speech_translation/
@@ -63,3 +64,12 @@ dist/
 # Test coverage
 coverage/
 .nyc_output/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local

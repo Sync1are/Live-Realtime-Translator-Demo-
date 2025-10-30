@@ -1,0 +1,24 @@
+{
+  "appId": "com.speechtranslation.app",
+  "productName": "Speech Translation",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*",
+    "package.json"
+  ],
+  "mac": {
+    "target": ["dmg", "zip"],
+    "icon": "build/icon.icns"
+  },
+  "win": {
+    "target": ["nsis", "zip"],
+    "icon": "build/icon.ico"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "icon": "build/icon.png"
+  }
+}
