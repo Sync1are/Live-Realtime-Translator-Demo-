@@ -1,0 +1,7 @@
+faster-whisper
+webrtcvad
+pyaudio
+transformers
+torch
+pyttsx3
+tabulate

@@ -15,6 +15,9 @@ A production-ready real-time speech translation system that captures audio from 
 - **Multi-threaded Pipeline**: Concurrent workers with bounded queues for stability
 - **GPU Support**: Optional CUDA acceleration for lower latency
 - **Flexible Configuration**: CLI arguments for language pairs, model size, and device selection
+- **Session Recording**: Automatic recording of translation sessions with performance metrics
+- **History & Archive**: Browse past sessions with filtering and archival capabilities
+- **Export Support**: Export sessions to CSV or JSON for analysis and backup
 
 ## 📋 Requirements
 
@@ -35,7 +38,13 @@ cd speech-translation-pipeline
 ### 2. Install Dependencies
 
 ```bash
-pip install faster-whisper webrtcvad pyaudio transformers torch pyttsx3
+pip install -r requirements.txt
+```
+
+Or install manually:
+
+```bash
+pip install faster-whisper webrtcvad pyaudio transformers torch pyttsx3 tabulate
 ```
 
 ### Platform-Specific PyAudio Installation
@@ -123,6 +132,7 @@ python speech_translation_pipeline.py \
 | `--device` | `cpu`, `cuda` | `cpu` | Compute device |
 | `--compute-type` | `int8`, `fp16`, `float32` | `int8` | Model precision (int8 for CPU, fp16 for GPU) |
 | `--duration` | Any integer | `60` | Run duration in seconds (0 = infinite) |
+| `--no-record` | flag | `False` | Disable session recording |
 
 ## 📚 Usage Examples
 
@@ -210,6 +220,168 @@ The pipeline includes a built-in AEC mechanism:
 - VAD ignores microphone input during playback
 - 300ms post-speech delay for acoustic decay
 - Prevents the system from translating its own output
+
+## 📊 Session History, Archive & Export
+
+### Session Recording
+
+By default, all translation sessions are automatically recorded with:
+- Source and translated text for each event
+- Performance metrics (STT, MT, TTS latency)
+- Session metadata (language pair, model, device)
+- Start/end timestamps
+
+Session data is stored in `~/.speech_translation/sessions/`.
+
+To disable recording, use the `--no-record` flag:
+
+```bash
+python speech_translation_pipeline.py --src-lang en --tgt-lang de --no-record
+```
+
+### Viewing Session History
+
+Use the `history_viewer.py` tool to browse past sessions:
+
+#### List All Sessions
+
+```bash
+python history_viewer.py list
+```
+
+#### Filter Sessions
+
+```bash
+# Sessions from last 7 days
+python history_viewer.py list --last-days 7
+
+# Filter by language pair
+python history_viewer.py list --source-lang en --target-lang de
+
+# Filter by status
+python history_viewer.py list --status completed
+
+# Filter by date range
+python history_viewer.py list --start-date 2024-01-01 --end-date 2024-01-31
+```
+
+#### View Session Details
+
+```bash
+python history_viewer.py show <session_id>
+```
+
+This displays:
+- Session metadata and duration
+- Event count and average latency
+- Recent translation events with individual latencies
+
+### Archiving Sessions
+
+Archive old completed sessions to keep your active session list clean while preserving data.
+
+#### Auto-Archive
+
+By default, sessions older than 30 days are eligible for archiving. To archive them:
+
+```bash
+python history_viewer.py archive
+```
+
+#### Custom Threshold
+
+Archive sessions older than a specific number of days:
+
+```bash
+# Archive sessions older than 90 days
+python history_viewer.py archive --threshold-days 90
+```
+
+#### Unarchive Sessions
+
+Restore archived sessions back to active status:
+
+```bash
+python history_viewer.py unarchive <session_id>
+```
+
+Archived sessions are stored in `~/.speech_translation/archive/` and can still be viewed, exported, and searched.
+
+### Exporting Sessions
+
+Export session data for backup, analysis, or integration with other tools.
+
+#### Export to JSON
+
+```bash
+# Export all sessions
+python history_viewer.py export sessions.json --format json
+
+# Export sessions from last 30 days
+python history_viewer.py export recent_sessions.json --format json --last-days 30
+
+# Export with filters
+python history_viewer.py export en_de_sessions.json --format json \
+  --source-lang en --target-lang de --start-date 2024-01-01
+```
+
+**JSON Format:**
+- Includes complete session metadata
+- Nested structure with all events
+- Contains performance metrics and timestamps
+- Suitable for re-import or programmatic analysis
+
+#### Export to CSV
+
+```bash
+# Export all events to CSV
+python history_viewer.py export sessions.csv --format csv
+
+# Export filtered data
+python history_viewer.py export last_week.csv --format csv --last-days 7
+```
+
+**CSV Format:**
+- One row per translation event
+- Flattened structure for spreadsheet analysis
+- Includes session context in each row
+- Contains individual and total latency metrics
+
+**CSV Fields:**
+- `session_id`: Unique session identifier
+- `session_start_time`: Session start timestamp (ISO format)
+- `session_status`: Session status (active/completed/archived)
+- `source_lang`: Source language code
+- `target_lang`: Target language code
+- `model_size`: Whisper model size used
+- `device`: Compute device (cpu/cuda)
+- `event_timestamp`: Event timestamp (Unix time)
+- `event_time_iso`: Event time (ISO format)
+- `source_text`: Original transcribed text
+- `translated_text`: Translated text
+- `stt_latency_ms`: Speech-to-text latency in milliseconds
+- `mt_latency_ms`: Machine translation latency in milliseconds
+- `tts_latency_ms`: Text-to-speech latency in milliseconds
+- `total_latency_ms`: Total end-to-end latency
+
+### Configuration
+
+Session manager configuration is stored in `~/.speech_translation/config.json`:
+
+```json
+{
+  "archive_threshold_days": 30,
+  "auto_archive": true
+}
+```
+
+You can manually edit this file to change default behavior.
+
+### Additional Documentation
+
+For more detailed information about history and export features:
+- **[Complete Guide](HISTORY_AND_EXPORT_GUIDE.md)**: Comprehensive documentation with examples and use cases
+- **[Quick Reference](QUICK_REFERENCE.md)**: Command cheat sheet for common tasks
 
 ## ⚙️ Advanced Configuration
 
@@ -351,7 +523,9 @@ Tested on Intel i7-10700K (CPU) and RTX 3060 (GPU):
 
 ```
 speech-translation-pipeline/
-├── speech_translation_pipeline.py    # Main script
+├── speech_translation_pipeline.py    # Main translation pipeline
+├── session_manager.py                # Session recording and management
+├── history_viewer.py                 # History browser and export tool
 ├── README.md                         # This file
 ├── requirements.txt                  # Dependencies
 └── LICENSE                          # License file
@@ -405,10 +579,12 @@ Contributions welcome! Please:
 
 ## 🗺️ Roadmap
 
+- [x] Recording/playback of sessions ✅
+- [x] Session history and archival ✅
+- [x] Export to CSV/JSON ✅
 - [ ] WebSocket server for remote access
 - [ ] Web UI for configuration
 - [ ] Multiple concurrent language pairs
-- [ ] Recording/playback of sessions
 - [ ] Custom TTS voice selection
 - [ ] Mobile app integration
 - [ ] Docker container support
