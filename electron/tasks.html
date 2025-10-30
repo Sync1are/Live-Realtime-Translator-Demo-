@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Manager - Time Blocking & Timer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f7fa;
+      color: #2d3748;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a202c;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Buttons */
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #4299e1;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #3182ce;
+    }
+
+    .btn-secondary {
+      background: #cbd5e0;
+      color: #2d3748;
+    }
+
+    .btn-secondary:hover {
+      background: #a0aec0;
+    }
+
+    .btn-success {
+      background: #48bb78;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #38a169;
+    }
+
+    .btn-warning {
+      background: #ed8936;
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #dd6b20;
+    }
+
+    .btn-danger {
+      background: #f56565;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #e53e3e;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    /* Floating Active Task Indicator */
+    .floating-timer {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(102, 126, 234, 0.5);
+      min-width: 300px;
+      z-index: 1000;
+      display: none;
+    }
+
+    .floating-timer.active {
+      display: block;
+    }
+
+    .floating-timer-task {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .floating-timer-time {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+
+    .floating-timer-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .floating-timer-controls button {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+
+    /* Quick Add */
+    .quick-add {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .quick-add-form {
+      display: flex;
+      gap: 10px;
+    }
+
+    .quick-add-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .quick-add-input:focus {
+      outline: none;
+      border-color: #4299e1;
+    }
+
+    .quick-add-hint {
+      font-size: 12px;
+      color: #718096;
+      margin-top: 8px;
+    }
+
+    /* View Switcher */
+    .view-switcher {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .view-btn {
+      padding: 10px 20px;
+      background: transparent;
+      border: 2px solid #e2e8f0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .view-btn.active {
+      background: #4299e1;
+      color: white;
+      border-color: #4299e1;
+    }
+
+    /* Task Lists View */
+    .task-lists-view {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .task-list {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .task-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .task-list-title {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .task-list-count {
+      background: #edf2f7;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #4a5568;
+    }
+
+    .task-list.not-started .task-list-header {
+      border-bottom-color: #cbd5e0;
+    }
+
+    .task-list.in-progress .task-list-header {
+      border-bottom-color: #4299e1;
+    }
+
+    .task-list.paused .task-list-header {
+      border-bottom-color: #ed8936;
+    }
+
+    .task-list.completed .task-list-header {
+      border-bottom-color: #48bb78;
+    }
+
+    .task-items {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 100px;
+    }
+
+    .task-item {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .task-item:hover {
+      border-color: #cbd5e0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .task-item.pending-rollover {
+      border-left: 4px solid #f6ad55;
+    }
+
+    .task-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+
+    .task-item-title {
+      font-weight: 600;
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .task-item-priority {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .task-item-priority.low {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .task-item-priority.medium {
+      background: #bee3f8;
+      color: #2c5282;
+    }
+
+    .task-item-priority.high {
+      background: #feebc8;
+      color: #7c2d12;
+    }
+
+    .task-item-priority.urgent {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .task-item-description {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .task-item-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #a0aec0;
+    }
+
+    .task-item-time {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .time-progress {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .time-progress.over {
+      color: #e53e3e;
+      font-weight: 600;
+    }
+
+    .time-progress.under {
+      color: #38a169;
+      font-weight: 600;
+    }
+
+    .task-item-tags {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .task-tag {
+      background: #edf2f7;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      color: #4a5568;
+    }
+
+    .task-item-actions {
+      display: flex;
+      gap: 4px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .task-item-actions button {
+      flex: 1;
+    }
+
+    /* Time Blocking View */
+    .time-blocking-view {
+      display: none;
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .time-blocking-view.active {
+      display: block;
+    }
+
+    .time-blocking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .time-blocking-date {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .time-blocking-grid {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 0;
+    }
+
+    .time-slot {
+      display: contents;
+    }
+
+    .time-label {
+      padding: 15px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 12px;
+      color: #718096;
+      text-align: right;
+    }
+
+    .time-content {
+      padding: 10px;
+      border-bottom: 1px solid #e2e8f0;
+      min-height: 60px;
+      position: relative;
+    }
+
+    .time-block {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .time-block:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .time-block-title {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .time-block-time {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      overflow-y: auto;
+    }
+
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: #4299e1;
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .form-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px;
+      border: 2px solid #e2e8f0;
+      border-radius: 6px;
+      min-height: 42px;
+    }
+
+    .form-tag {
+      background: #4299e1;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .form-tag-remove {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 0;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .form-tag-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      min-width: 100px;
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 30px;
+    }
+
+    /* Filters */
+    .filters {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #4a5568;
+    }
+
+    .filter-select {
+      padding: 6px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #a0aec0;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    .empty-state-text {
+      font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .task-lists-view {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .task-lists-view {
+        grid-template-columns: 1fr;
+      }
+
+      .floating-timer {
+        bottom: 15px;
+        right: 15px;
+        min-width: 250px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>Task Manager</h1>
+      <div class="header-actions">
+        <button class="btn-secondary" onclick="window.location.href='index.html'">← Back to Dashboard</button>
+        <button class="btn-primary" onclick="openTaskModal()">+ New Task</button>
+      </div>
+    </div>
+
+    <!-- Quick Add -->
+    <div class="quick-add">
+      <form class="quick-add-form" onsubmit="quickAddTask(event)">
+        <input 
+          type="text" 
+          id="quick-add-input" 
+          class="quick-add-input" 
+          placeholder="Quick add a task (Ctrl/Cmd+N)..."
+        />
+        <button type="submit" class="btn-success">Add Task</button>
+      </form>
+      <div class="quick-add-hint">💡 Press Ctrl/Cmd+N to focus the quick add input</div>
+    </div>
+
+    <!-- View Switcher -->
+    <div class="view-switcher">
+      <button class="view-btn active" onclick="switchView('lists')">📋 Task Lists</button>
+      <button class="view-btn" onclick="switchView('blocking')">📅 Time Blocking</button>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+      <div class="filter-group">
+        <span class="filter-label">Priority:</span>
+        <select class="filter-select" id="filter-priority" onchange="applyFilters()">
+          <option value="">All</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Category:</span>
+        <select class="filter-select" id="filter-category" onchange="applyFilters()">
+          <option value="">All</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>
+          <input type="checkbox" id="filter-rollover" onchange="applyFilters()">
+          <span class="filter-label">Pending from Yesterday</span>
+        </label>
+      </div>
+      <button class="btn-secondary btn-small" onclick="clearFilters()">Clear Filters</button>
+    </div>
+
+    <!-- Task Lists View -->
+    <div class="task-lists-view" id="task-lists-view">
+      <div class="task-list not-started">
+        <div class="task-list-header">
+          <div class="task-list-title">
+            Not Started
+            <span class="task-list-count" id="count-not-started">0</span>
+          </div>
+        </div>
+        <div class="task-items" id="tasks-not-started"></div>
+      </div>
+
+      <div class="task-list in-progress">
+        <div class="task-list-header">
+          <div class="task-list-title">
+            In Progress
+            <span class="task-list-count" id="count-in-progress">0</span>
+          </div>
+        </div>
+        <div class="task-items" id="tasks-in-progress"></div>
+      </div>
+
+      <div class="task-list paused">
+        <div class="task-list-header">
+          <div class="task-list-title">
+            Paused
+            <span class="task-list-count" id="count-paused">0</span>
+          </div>
+        </div>
+        <div class="task-items" id="tasks-paused"></div>
+      </div>
+
+      <div class="task-list completed">
+        <div class="task-list-header">
+          <div class="task-list-title">
+            Completed
+            <span class="task-list-count" id="count-completed">0</span>
+          </div>
+        </div>
+        <div class="task-items" id="tasks-completed"></div>
+      </div>
+    </div>
+
+    <!-- Time Blocking View -->
+    <div class="time-blocking-view" id="time-blocking-view">
+      <div class="time-blocking-header">
+        <div class="time-blocking-date" id="blocking-date">Today</div>
+        <button class="btn-primary" onclick="scheduleTaskForBlock()">Schedule Task</button>
+      </div>
+      <div class="time-blocking-grid" id="time-blocking-grid"></div>
+    </div>
+  </div>
+
+  <!-- Floating Active Task Timer -->
+  <div class="floating-timer" id="floating-timer">
+    <div class="floating-timer-task" id="timer-task-title">Task Title</div>
+    <div class="floating-timer-time" id="timer-elapsed">00:00:00</div>
+    <div class="floating-timer-controls">
+      <button class="btn-warning btn-small" onclick="pauseActiveTimer()">⏸ Pause</button>
+      <button class="btn-success btn-small" onclick="completeActiveTask()">✓ Complete</button>
+    </div>
+  </div>
+
+  <!-- Task Modal -->
+  <div class="modal" id="task-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Create Task</h2>
+        <button class="modal-close" onclick="closeTaskModal()">×</button>
+      </div>
+      
+      <form onsubmit="saveTask(event)">
+        <div class="form-group">
+          <label class="form-label">Title *</label>
+          <input type="text" id="task-title" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="task-description" class="form-textarea"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Estimated Time (minutes)</label>
+            <input type="number" id="task-estimate" class="form-input" min="0" value="30">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Priority</label>
+            <select id="task-priority" class="form-select">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Categories</label>
+          <div class="form-tags" id="task-categories">
+            <input 
+              type="text" 
+              class="form-tag-input" 
+              placeholder="Type and press Enter..."
+              onkeydown="handleTagInput(event, 'categories')"
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tags</label>
+          <div class="form-tags" id="task-tags">
+            <input 
+              type="text" 
+              class="form-tag-input" 
+              placeholder="Type and press Enter..."
+              onkeydown="handleTagInput(event, 'tags')"
+            >
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Scheduled Date</label>
+            <input type="date" id="task-scheduled-date" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Time Block</label>
+            <select id="task-time-block" class="form-select">
+              <option value="">None</option>
+              <option value="09:00-10:00">09:00 - 10:00</option>
+              <option value="10:00-11:00">10:00 - 11:00</option>
+              <option value="11:00-12:00">11:00 - 12:00</option>
+              <option value="12:00-13:00">12:00 - 13:00</option>
+              <option value="13:00-14:00">13:00 - 14:00</option>
+              <option value="14:00-15:00">14:00 - 15:00</option>
+              <option value="15:00-16:00">15:00 - 16:00</option>
+              <option value="16:00-17:00">16:00 - 17:00</option>
+              <option value="17:00-18:00">17:00 - 18:00</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeTaskModal()">Cancel</button>
+          <button type="submit" class="btn-primary">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="tasks.js"></script>
+</body>
+</html>
