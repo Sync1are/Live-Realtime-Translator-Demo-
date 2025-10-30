@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification Engine - Task Management</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+
+    .section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      color: #555;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .controls {
+      display: grid;
+      gap: 15px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 4px;
+    }
+
+    label {
+      font-weight: 500;
+      color: #333;
+    }
+
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    input[type="time"] {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    button.secondary {
+      background: #6c757d;
+    }
+
+    button.secondary:hover {
+      background: #545b62;
+    }
+
+    .test-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .inbox-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .inbox-item {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+    }
+
+    .inbox-item:last-child {
+      border-bottom: none;
+    }
+
+    .inbox-item.unread {
+      background: #f0f8ff;
+      font-weight: 500;
+    }
+
+    .inbox-content {
+      flex: 1;
+    }
+
+    .inbox-date {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    .inbox-data {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .status.error {
+      background: #ffebee;
+      border-left-color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔔 Notification Engine - Task Management</h1>
+
+    <!-- Daily Stats -->
+    <div class="section">
+      <h2>Daily Statistics</h2>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value" id="tasksCompleted">0</div>
+          <div class="stat-label">Tasks Completed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="focusTime">0</div>
+          <div class="stat-label">Focus Time (min)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="streak">0</div>
+          <div class="stat-label">Day Streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="pendingRollovers">0</div>
+          <div class="stat-label">Pending Rollovers</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Settings -->
+    <div class="section">
+      <h2>Notification Settings</h2>
+      <div class="controls">
+        <div class="control-group">
+          <label for="taskReminders">Task Reminders</label>
+          <input type="checkbox" id="taskReminders">
+        </div>
+        <div class="control-group">
+          <label for="overdueAlerts">Overdue Alerts</label>
+          <input type="checkbox" id="overdueAlerts">
+        </div>
+        <div class="control-group">
+          <label for="endOfDaySummary">End-of-Day Summary</label>
+          <input type="checkbox" id="endOfDaySummary">
+        </div>
+      </div>
+    </div>
+
+    <!-- Quiet Hours -->
+    <div class="section">
+      <h2>Quiet Hours</h2>
+      <div class="controls">
+        <div class="control-group">
+          <label for="quietHoursEnabled">Enable Quiet Hours</label>
+          <input type="checkbox" id="quietHoursEnabled">
+        </div>
+        <div class="control-group">
+          <label for="quietHoursStart">Start Time</label>
+          <input type="time" id="quietHoursStart">
+        </div>
+        <div class="control-group">
+          <label for="quietHoursEnd">End Time</label>
+          <input type="time" id="quietHoursEnd">
+        </div>
+      </div>
+    </div>
+
+    <!-- End-of-Day Time -->
+    <div class="section">
+      <h2>End-of-Day Summary Time</h2>
+      <div class="controls">
+        <div class="control-group">
+          <label for="eodTime">Summary Time</label>
+          <input type="time" id="eodTime">
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Notifications -->
+    <div class="section">
+      <h2>Test Notifications</h2>
+      <div class="test-buttons">
+        <button onclick="testNotification('reminder')">Test Task Reminder</button>
+        <button onclick="testNotification('overdue')">Test Overdue Alert</button>
+        <button onclick="testNotification('summary')">Test Daily Summary</button>
+        <button class="secondary" onclick="triggerSummary()">Trigger Daily Summary Now</button>
+      </div>
+    </div>
+
+    <!-- Inbox -->
+    <div class="section">
+      <h2>Notification Inbox (<span id="unreadCount">0</span> unread)</h2>
+      <button onclick="markAllAsRead()" style="margin-bottom: 15px;">Mark All as Read</button>
+      <div class="inbox-list" id="inboxList">
+        <p style="color: #999; padding: 20px; text-align: center;">No notifications yet</p>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div id="statusMessage"></div>
+  </div>
+
+  <script>
+    // Initialize
+    let currentSettings = {};
+
+    // Load settings and stats on startup
+    async function initialize() {
+      await loadSettings();
+      await loadDailyStats();
+      await loadInbox();
+    }
+
+    // Load settings
+    async function loadSettings() {
+      try {
+        const settings = await window.notificationAPI.getSettings();
+        currentSettings = settings;
+
+        // Apply to UI
+        document.getElementById('taskReminders').checked = settings.notifications.taskReminders;
+        document.getElementById('overdueAlerts').checked = settings.notifications.overdueAlerts;
+        document.getElementById('endOfDaySummary').checked = settings.notifications.endOfDaySummary;
+        document.getElementById('quietHoursEnabled').checked = settings.notifications.quietHours.enabled;
+        document.getElementById('quietHoursStart').value = settings.notifications.quietHours.start;
+        document.getElementById('quietHoursEnd').value = settings.notifications.quietHours.end;
+        document.getElementById('eodTime').value = settings.endOfDay.summaryTime;
+
+        showStatus('Settings loaded successfully');
+      } catch (error) {
+        showStatus('Failed to load settings: ' + error.message, true);
+      }
+    }
+
+    // Load daily stats
+    async function loadDailyStats() {
+      try {
+        const stats = await window.notificationAPI.getDailyStats();
+        
+        document.getElementById('tasksCompleted').textContent = stats.tasksCompleted;
+        document.getElementById('focusTime').textContent = stats.focusTime;
+        document.getElementById('streak').textContent = stats.streak;
+        document.getElementById('pendingRollovers').textContent = stats.pendingRollovers;
+      } catch (error) {
+        showStatus('Failed to load daily stats: ' + error.message, true);
+      }
+    }
+
+    // Load inbox
+    async function loadInbox() {
+      try {
+        const items = await window.notificationAPI.getInboxItems();
+        const unreadCount = await window.notificationAPI.getUnreadCount();
+        
+        document.getElementById('unreadCount').textContent = unreadCount;
+        
+        const inboxList = document.getElementById('inboxList');
+        
+        if (items.length === 0) {
+          inboxList.innerHTML = '<p style="color: #999; padding: 20px; text-align: center;">No notifications yet</p>';
+          return;
+        }
+        
+        inboxList.innerHTML = items.map(item => `
+          <div class="inbox-item ${item.read ? '' : 'unread'}">
+            <div class="inbox-content">
+              <div class="inbox-date">${new Date(item.timestamp).toLocaleString()}</div>
+              <div class="inbox-data">${formatInboxData(item)}</div>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        showStatus('Failed to load inbox: ' + error.message, true);
+      }
+    }
+
+    // Format inbox data
+    function formatInboxData(item) {
+      if (item.type === 'dailySummary') {
+        const data = item.data;
+        return `📊 Daily Summary: ${data.tasksCompleted} tasks, ${data.focusTime} min focus, ${data.streak} day streak`;
+      }
+      return JSON.stringify(item.data);
+    }
+
+    // Event listeners for settings
+    document.getElementById('taskReminders').addEventListener('change', async (e) => {
+      await window.notificationAPI.setTaskReminders(e.target.checked);
+      showStatus('Task reminders ' + (e.target.checked ? 'enabled' : 'disabled'));
+    });
+
+    document.getElementById('overdueAlerts').addEventListener('change', async (e) => {
+      await window.notificationAPI.setOverdueAlerts(e.target.checked);
+      showStatus('Overdue alerts ' + (e.target.checked ? 'enabled' : 'disabled'));
+    });
+
+    document.getElementById('endOfDaySummary').addEventListener('change', async (e) => {
+      await window.notificationAPI.setEndOfDaySummary(e.target.checked);
+      showStatus('End-of-day summary ' + (e.target.checked ? 'enabled' : 'disabled'));
+    });
+
+    document.getElementById('quietHoursEnabled').addEventListener('change', async (e) => {
+      await window.notificationAPI.setQuietHours({
+        enabled: e.target.checked
+      });
+      showStatus('Quiet hours ' + (e.target.checked ? 'enabled' : 'disabled'));
+    });
+
+    document.getElementById('quietHoursStart').addEventListener('change', async (e) => {
+      await window.notificationAPI.setQuietHours({
+        start: e.target.value
+      });
+      showStatus('Quiet hours start time updated');
+    });
+
+    document.getElementById('quietHoursEnd').addEventListener('change', async (e) => {
+      await window.notificationAPI.setQuietHours({
+        end: e.target.value
+      });
+      showStatus('Quiet hours end time updated');
+    });
+
+    document.getElementById('eodTime').addEventListener('change', async (e) => {
+      await window.notificationAPI.setEndOfDayTime(e.target.value);
+      showStatus('End-of-day summary time updated');
+    });
+
+    // Test notification
+    async function testNotification(type) {
+      try {
+        await window.notificationAPI.testNotification(type);
+        showStatus('Test notification sent: ' + type);
+      } catch (error) {
+        showStatus('Failed to send test notification: ' + error.message, true);
+      }
+    }
+
+    // Trigger summary
+    async function triggerSummary() {
+      try {
+        await window.notificationAPI.triggerSummary();
+        showStatus('Daily summary triggered');
+        setTimeout(loadInbox, 1000);
+      } catch (error) {
+        showStatus('Failed to trigger summary: ' + error.message, true);
+      }
+    }
+
+    // Mark all as read
+    async function markAllAsRead() {
+      try {
+        await window.notificationAPI.markAllAsRead();
+        showStatus('All notifications marked as read');
+        loadInbox();
+      } catch (error) {
+        showStatus('Failed to mark as read: ' + error.message, true);
+      }
+    }
+
+    // Show status message
+    function showStatus(message, isError = false) {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = message;
+      statusEl.className = 'status' + (isError ? ' error' : '');
+      
+      setTimeout(() => {
+        statusEl.textContent = '';
+        statusEl.className = '';
+      }, 5000);
+    }
+
+    // Listen for notification events
+    window.notificationAPI.onNotificationClicked((data) => {
+      console.log('Notification clicked:', data);
+      showStatus('Notification clicked: ' + data.type);
+    });
+
+    window.notificationAPI.onTaskAction((data) => {
+      console.log('Task action:', data);
+      showStatus('Task action: ' + data.action);
+      loadDailyStats();
+    });
+
+    // Initialize on load
+    initialize();
+
+    // Refresh stats and inbox periodically
+    setInterval(() => {
+      loadDailyStats();
+      loadInbox();
+    }, 30000); // Every 30 seconds
+  </script>
+</body>
+</html>
