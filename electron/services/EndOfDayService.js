@@ -12,6 +12,7 @@ class EndOfDayService extends EventEmitter {
     this.dailyStats = {
       tasksCompleted: 0,
       focusTime: 0,
+      breakTime: 0,
       streak: 0,
       pendingRollovers: 0
     };
@@ -107,6 +108,13 @@ class EndOfDayService extends EventEmitter {
   }
 
   /**
+   * Add break time (in minutes)
+   */
+  addBreakTime(minutes) {
+    this.dailyStats.breakTime += minutes;
+  }
+
+  /**
    * Update streak count
    */
   updateStreak(days) {
@@ -134,6 +142,7 @@ class EndOfDayService extends EventEmitter {
     this.dailyStats = {
       tasksCompleted: 0,
       focusTime: 0,
+      breakTime: 0,
       streak: this.dailyStats.streak, // Preserve streak
       pendingRollovers: 0
     };
@@ -186,10 +195,22 @@ class EndOfDayService extends EventEmitter {
   }
 
   /**
+   * Calculate focus/break ratio
+   */
+  getFocusBreakRatio() {
+    const { focusTime, breakTime } = this.dailyStats;
+    if (breakTime === 0) {
+      return focusTime > 0 ? 'N/A' : '0:0';
+    }
+    const ratio = focusTime / breakTime;
+    return ratio.toFixed(2);
+  }
+
+  /**
    * Calculate productivity score based on daily stats
    */
   calculateProductivityScore() {
-    const { tasksCompleted, focusTime, streak } = this.dailyStats;
+    const { tasksCompleted, focusTime, breakTime, streak } = this.dailyStats;
     
     // Simple scoring algorithm
     let score = 0;

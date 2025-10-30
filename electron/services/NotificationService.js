@@ -267,6 +267,57 @@ class NotificationService extends EventEmitter {
       urgent: false
     });
   }
+
+  /**
+   * Send a Pomodoro notification
+   */
+  async sendPomodoroNotification(pomodoroData) {
+    const { type, message, isLongBreak, cycle } = pomodoroData;
+    
+    let title = '';
+    let actions = [];
+    
+    if (type === 'workComplete') {
+      title = '🍅 Work Session Complete!';
+      actions = [
+        { type: 'startBreak', text: isLongBreak ? 'Start Long Break' : 'Start Break' },
+        { type: 'skipBreak', text: 'Skip Break' }
+      ];
+    } else if (type === 'breakComplete') {
+      title = '✨ Break Complete!';
+      actions = [
+        { type: 'startWork', text: 'Start Work' },
+        { type: 'extendBreak', text: 'Extend 5 min' }
+      ];
+    }
+
+    return this.sendNotification({
+      type: 'pomodoro',
+      title,
+      body: message,
+      actions,
+      data: { pomodoroData },
+      urgent: false
+    });
+  }
+
+  /**
+   * Send a break reminder notification
+   */
+  async sendBreakReminder(focusMinutes) {
+    return this.sendNotification({
+      type: 'breakReminder',
+      title: '💆 Time for a Break?',
+      body: `You've been focused for ${focusMinutes} minutes. Consider taking a short break!`,
+      actions: [
+        { type: 'startBreak', text: 'Start Break' },
+        { type: 'snooze', text: 'Remind Later' },
+        { type: 'dismiss', text: 'Keep Working' }
+      ],
+      data: { focusMinutes },
+      urgent: false
+    });
+  }
 }
 
 module.exports = NotificationService;
